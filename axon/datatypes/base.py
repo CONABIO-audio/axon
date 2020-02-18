@@ -132,13 +132,13 @@ class DataType(ABC):
                     if not key in other.dict_dtypes:
                         return False
 
-                    cls_dtype = cls.dict_types[key]
-                    other_dtype = cls.dict_types[key]
+                    cls_dtype = cls.dict_dtypes[key]
+                    other_dtype = other.dict_dtypes[key]
                     if not cls_dtype.eq(other_dtype):
                         return False
 
                 for other_key in other.dict_dtypes:
-                    if other_key not in cls.dict_types:
+                    if other_key not in cls.dict_dtypes:
                         return False
 
                 return True
