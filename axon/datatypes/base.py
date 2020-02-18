@@ -25,7 +25,7 @@ def Tuple(array):
 
             return True
 
-        def eq(self, other):
+        def __eq__(self, other):
             if not isinstance(other, DataType):
                 return False
 
@@ -37,14 +37,14 @@ def Tuple(array):
 
             for self_dtype, other_dtype in zip(self.tuple_data_types,
                     other.tuple_data_types):
-                if not self_dtype.eq(other_dtype):
+                if not self_dtype == other_dtype:
                     return False
 
             return True
 
         def __repr__(self):
             reprs = tuple([repr(dtype) for dtype in self.tuple_data_types])
-            return repr(reprs)
+            return 'Tuple({})'.format(repr(reprs))
 
         def __str__(self):
             strs = tuple([str(dtype) for dtype in self.tuple_data_types])
@@ -76,7 +76,7 @@ def Dict(types):
 
             return True
 
-        def eq(self, other):
+        def __eq__(self, other):
             if not isinstance(other, DataType):
                 return False
 
@@ -89,7 +89,7 @@ def Dict(types):
 
                 self_dtype = self.dict_dtypes[key]
                 other_dtype = other.dict_dtypes[key]
-                if not self_dtype.eq(other_dtype):
+                if not self_dtype==other_dtype:
                     return False
 
             for other_key in other.dict_dtypes:
@@ -103,7 +103,7 @@ def Dict(types):
                 key: repr(value)
                 for key, value in self.dict_dtypes.items()
             }
-            return repr(dictionary)
+            return 'Dict({})'.format(repr(dictionary))
 
         def __str__(self):
             dictionary = {
@@ -116,7 +116,33 @@ def Dict(types):
 
 
 def List(dtype):
-    return dtype.list()
+    class ListType(DataType):
+        list_item_type = dtype
+        def validate(self, other):
+            if not isinstance(other, (tuple, list)):
+                return False
+            for item in other:
+                if not self.list_item_type.validate(item):
+                    return False
+
+            return True
+
+        def __eq__(self, other):
+            if not isinstance(other, DataType):
+                return False
+
+            if not hasattr(other, 'list_item_type'):
+                return False
+
+            return self.list_item_type == other.list_item_type
+
+        def __repr__(self):
+            return 'List({})'.format(repr(self.list_item_type))
+
+        def __str__(self):
+            return 'List[{}]'.format(str(self.list_item_type))
+
+    return ListType()
 
 
 class DataType(ABC):
@@ -124,39 +150,10 @@ class DataType(ABC):
     def validate(self, other):
         pass
 
-    def eq(self, other):
-        return other == self
+    def __eq__(self, other):
+        return(type(self)==type(other))
 
-    def list(self):
-        class ListType(DataType):
-            list_item_type = self
-
-            def validate(self, other):
-                if not isinstance(other, (tuple, list)):
-                    return False
-
-                for item in other:
-                    if not self.list_item_type.validate(item):
-                        return False
-
-                return True
-
-            def eq(self, other):
-                if not isinstance(other, DataType):
-                    return False
-
-                if not hasattr(other, 'list_item_type'):
-                    return False
-
-                return self.list_item_type == other.list_item_type
-
-            def __repr__(self):
-                return 'List({})'.format(repr(self.list_item_type))
-
-            def __str__(self):
-                return 'List[{}]'.format(str(self.list_item_type))
-
-        return ListType()
+     
 
 
 class String(DataType):
