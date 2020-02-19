@@ -1,5 +1,2 @@
-import luigi
-
-
-class Process(luigi.Task):
+class Process(object):
     pass
