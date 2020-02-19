@@ -311,25 +311,25 @@ class NumpyArray(DataType):
         self.shape=shape
         
     def validate(self, other):
-       if not (isinstance(other, np.ndarray)):
-           print("Not np.array")
-           return False
-       if not (self.shape==other.shape):
-           print("bad shape")
-           return False
-       aux=other.reshape(np.prod(other.shape))
-       for item in aux:
-           if not (self.nparray_item_type.validate(item)):
-               print("bad type")
-               return False
-       return True
+        if not (isinstance(other, np.ndarray)):
+            print("Not np.array")
+            return False
+        if not (self.shape==other.shape):
+            print("bad shape")
+            return False
+        aux=other.reshape(np.prod(other.shape))
+        for item in aux:
+            if not (self.nparray_item_type.validate(item)):
+                print("bad type")
+                return False
+        return True
    
     def __eq__(self, other):
         if not (isinstance(other, np.ndarray)):
-           return False
+            return False
         if not (self.nparray_item_type==other.dtype):
-           return False
+            return False
         if not (self.shape==other.shape):
-           return False
+            return False
         return True
         
