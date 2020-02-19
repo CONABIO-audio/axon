@@ -47,3 +47,18 @@ def test_npArray_bad1():
     A=dt.NumpyArray(dt.Int(), (240,240))
     B= np.eye(240)
     assert (A.validate(B))==False    
+    
+def test_npArray_compare():
+    A=dt.NumpyArray(dt.Int(), (240,240))
+    B= dt.NumpyArray(dt.Int(), (240,240))
+    assert (A==B)==True     
+    
+def test_npArray_comparebad():
+    A=dt.NumpyArray(dt.Int(), (240,240))
+    B= dt.NumpyArray(dt.Int(), (240,239))
+    assert (A==B)==False    
+    
+def test_npArray_comparebad2():
+    A=dt.NumpyArray(dt.Int(), (240,240))
+    B= dt.NumpyArray(dt.Float(), (240,240))
+    assert (A==B)==False 

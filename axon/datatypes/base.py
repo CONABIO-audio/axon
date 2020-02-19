@@ -291,17 +291,23 @@ class Float(DataType):
     def __str__(self):
         return 'Float'
     
-# Implementar Numpy Array
+"""We create a class for multidimension numpy arrays. At initialization the 
+DataType of the entries must be defined as well as the shape of the numpy array
+Example: NumpyArray(Float(), (2,2))
+"""
 class NumpyArray(DataType):
     def __init__(self, dtype, shape):
+        # Verify dtype is a valid DataType
         if not isinstance(dtype, DataType):
             message = 'Given dtype is not a DataType. (type={})'
             message = message.format(type(dtype))
             raise ValueError(message)
+        # Verify shape is specified as a tuple    
         if not isinstance(shape, tuple):
             message = 'Given shape should be given as a tuple. (type={})'
             message = message.format(type(dtype))
             raise ValueError(message)
+        # Verify shape has integer values
         for item in shape:
             if not isinstance(item, int):
                 message = 'All entries of shape should be of type int. (type={})'
@@ -311,25 +317,34 @@ class NumpyArray(DataType):
         self.shape=shape
         
     def validate(self, other):
+        # Verify instance is a np array
         if not (isinstance(other, np.ndarray)):
-            print("Not np.array")
             return False
+        # Verify shape is correct
         if not (self.shape==other.shape):
-            print("bad shape")
             return False
+        # Verify all entries correspond to the correct DataType 
         aux=other.reshape(np.prod(other.shape))
         for item in aux:
             if not (self.nparray_item_type.validate(item)):
-                print("bad type")
                 return False
         return True
    
     def __eq__(self, other):
-        if not (isinstance(other, np.ndarray)):
+        if not isinstance(other, DataType):
             return False
-        if not (self.nparray_item_type==other.dtype):
+        # Verify it is a list from attribute nparray_item_type
+        if not hasattr(other, 'nparray_item_type'):
             return False
         if not (self.shape==other.shape):
             return False
-        return True
         
+        if not(self.nparray_item_type==other.nparray_item_type):
+            return False
+        return True
+    
+    def __repr__(self):
+        return 'NumpyArray({})'.format(repr(self.nparray_item_type))
+
+    def __str__(self):
+        return 'NumpyArray({})'.format(str(self.nparray_item_type))        
