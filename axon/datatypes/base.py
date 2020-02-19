@@ -290,6 +290,3 @@ class Float(DataType):
 
     def __str__(self):
         return 'Float'
-
-# TODO: Implementar Numpy Array
-# TODO: Implementar DataFrame
