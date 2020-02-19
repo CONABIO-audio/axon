@@ -290,3 +290,46 @@ class Float(DataType):
 
     def __str__(self):
         return 'Float'
+    
+# Implementar Numpy Array
+class NumpyArray(DataType):
+    def __init__(self, dtype, shape):
+        if not isinstance(dtype, DataType):
+            message = 'Given dtype is not a DataType. (type={})'
+            message = message.format(type(dtype))
+            raise ValueError(message)
+        if not isinstance(shape, tuple):
+            message = 'Given shape should be given as a tuple. (type={})'
+            message = message.format(type(dtype))
+            raise ValueError(message)
+        for item in shape:
+            if not isinstance(item, int):
+                message = 'All entries of shape should be of type int. (type={})'
+                message = message.format(type(dtype))
+                raise ValueError(message)
+        self.nparray_item_type = dtype
+        self.shape=shape
+        
+    def validate(self, other):
+       if not (isinstance(other, np.ndarray)):
+           print("Not np.array")
+           return False
+       if not (self.shape==other.shape):
+           print("bad shape")
+           return False
+       aux=other.reshape(np.prod(other.shape))
+       for item in aux:
+           if not (self.nparray_item_type.validate(item)):
+               print("bad type")
+               return False
+       return True
+   
+    def __eq__(self, other):
+        if not (isinstance(other, np.ndarray)):
+           return False
+        if not (self.nparray_item_type==other.dtype):
+           return False
+        if not (self.shape==other.shape):
+           return False
+        return True
+        
