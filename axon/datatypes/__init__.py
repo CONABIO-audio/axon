@@ -19,7 +19,7 @@ from .base import Tuple
 from .base import Dict
 from .base import NoneType
 from .numpy_dtypes import NumpyArray
-
+from .pandas_dtypes import DataFrame
 
 __all__ = [
     'DataType',
@@ -31,5 +31,6 @@ __all__ = [
     'Tuple',
     'Dict',
     'NoneType',
-    'NumpyArray'
+    'NumpyArray',
+    'DataFrame'
 ]
