@@ -420,7 +420,7 @@ class Float(DataType):
     def __repr__(self):
         """Get full representation."""
         if self.description:
-            return 'rloat(description="{}")'.format(self.description)
+            return 'Float(description="{}")'.format(self.description)
 
         return 'Float()'
 
