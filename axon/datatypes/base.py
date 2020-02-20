@@ -19,6 +19,10 @@ class DataType(ABC):
     is an abstract method it must be redefined for every data type accordingly.
     """
 
+    def __init__(self, description=None):
+        """Create a DataType."""
+        self.description = description
+
     @abstractmethod
     def validate(self, other):
         """Check if object is of this datatype."""
@@ -27,8 +31,47 @@ class DataType(ABC):
         """Check if two datatypes are the same."""
         return isinstance(other, type(self))
 
+    def __or__(self, other):
+        return ConjunctionDataType(self, other)
 
-class Tuple(DataType):
+    def __ror__(self, other):
+        return ConjunctionDataType(other, self)
+
+
+class ConjunctionDataType(DataType):
+    """
+    Conjunction DataType.
+
+    Represents a datum which can be one of two different datatypes.
+    """
+
+    def __init__(self, first, second, **kwargs):
+        """Create a conjunction datatype."""
+        super().__init__(**kwargs)
+        self.first = first
+        self.second = second
+
+    def validate(self, other):
+        """Check if is one of the two declared datatypes."""
+        if self.first.validate(other):
+            return True
+
+        return self.second.validate(other)
+
+    def __eq__(self, other):
+        if not isinstance(other, ConjunctionDataType):
+            return False
+
+        if (self.first == other.first) and (self.second == other.second):
+            return True
+
+        return (self.first == other.second) and (self.second == other.first)
+
+    def __repr__(self):
+        return '{} | {}'.format(repr(self.first), repr(self.second))
+
+
+class Tuple(tuple, DataType):
     """
     The Tuple DataType.
 
@@ -40,8 +83,9 @@ class Tuple(DataType):
     Example: Tuple([Int(), Bool(), String()])
     """
 
-    def __init__(self, type_array):
+    def __new__(cls, type_array, **kwargs):
         """Create a Tuple from list of datatypes."""
+        # pylint: disable=unused-argument
         # Verify if the entries correspond to an accepted DataType
         for dtype in type_array:
             if not isinstance(dtype, DataType):
@@ -49,8 +93,12 @@ class Tuple(DataType):
                 message = message.format(type(dtype))
                 raise ValueError(message)
 
-        # Define attribute tuple_data_type
-        self.tuple_data_types = type_array
+        return tuple.__new__(cls, type_array)
+
+    def __init__(self, type_array, **kwargs):
+        """Create a Tuple from list of datatypes."""
+        # pylint: disable=unused-argument,super-init-not-called
+        DataType.__init__(self, **kwargs)
 
     def validate(self, other):
         """Check if argument is a Tuple."""
@@ -59,11 +107,11 @@ class Tuple(DataType):
             return False
 
         # Check if length of the defined tuple coincides with other's length
-        if len(other) != len(self.tuple_data_types):
+        if len(other) != len(self):
             return False
 
         # Verify that the datatypes coincide in each entry
-        for other_item, array_dtype in zip(other, self.tuple_data_types):
+        for other_item, array_dtype in zip(other, self):
             if not array_dtype.validate(other_item):
                 return False
 
@@ -74,34 +122,31 @@ class Tuple(DataType):
         if not isinstance(other, DataType):
             return False
 
-        # Verify it is a tuple by checking the attribute tuple_data_types
-        # is present
-        if not hasattr(other, 'tuple_data_types'):
+        # Verify it is a tuple
+        if not isinstance(other, tuple):
             return False
 
         # Check if lengths coincide
-        if len(self.tuple_data_types) != len(other.tuple_data_types):
+        if len(self) != len(other):
             return False
 
         # Verify that the datatypes coincide in each entry
-        for self_dtype, other_dtype in zip(
-                self.tuple_data_types,
-                other.tuple_data_types):
+        for self_dtype, other_dtype in zip(self, other):
             if not self_dtype == other_dtype:
                 return False
 
         return True
 
     def __repr__(self):
-        reprs = tuple([repr(dtype) for dtype in self.tuple_data_types])
+        reprs = tuple([repr(dtype) for dtype in self])
         return 'Tuple({})'.format(repr(reprs))
 
     def __str__(self):
-        strs = tuple([str(dtype) for dtype in self.tuple_data_types])
-        return str(strs)
+        str_tuple = tuple([str(dtype) for dtype in self])
+        return str(str_tuple)
 
 
-class Dict(DataType):
+class Dict(dict, DataType):
     """
     Dictionary Datatype.
 
@@ -110,16 +155,22 @@ class Dict(DataType):
     Example: Dict({'Key1':Int(), 'Key2':Bool()})
     """
 
-    def __init__(self, dict_struct):
+    def __new__(cls, dtypes_dict, **kwargs):
         """Create a Dict DataType from dictionary of DataTypes."""
+        # pylint: disable=unused-argument
         # Verify the DataTypes for the values are valid DataTypes.
-        for value in dict_struct.values():
+        for value in dtypes_dict.values():
             if not isinstance(value, DataType):
                 message = 'Dictionary value is not a DataType. (type={})'
                 message = message.format(type(value))
                 raise ValueError(message)
 
-        self.dict_dtypes = dict_struct
+        return super(Dict, cls).__new__(cls, dtypes_dict)
+
+    def __init__(self, dtypes_dict, **kwargs):
+        """Create a Dict DataType from dictionary of DataTypes."""
+        dict.__init__(self, dtypes_dict)
+        DataType.__init__(self, **kwargs)
 
     def validate(self, other):
         """Check if argument is of this Dict type."""
@@ -129,7 +180,7 @@ class Dict(DataType):
         # Check if every key in the defined class is present
         # in the other instance.
         # And check if the values for a given key coincide in both.
-        for key, value in self.dict_dtypes.items():
+        for key, value in self.items():
             if key not in other:
                 return False
             if not value.validate(other[key]):
@@ -142,42 +193,37 @@ class Dict(DataType):
         if not isinstance(other, DataType):
             return False
 
-        # Verify it is a Dict by checking the attribute
-        # dict_types is present
-        if not hasattr(other, 'dict_dtypes'):
+        # Verify it is a dict
+        if not isinstance(other, dict):
             return False
 
         # Check if every key in the defined class is present
         # in the other instance.
         # And check if the values for a given key coincide in both.
-        for key in self.dict_dtypes:
-            if key not in other.dict_dtypes:
+        for key in self:
+            if key not in other:
                 return False
-            self_dtype = self.dict_dtypes[key]
-            other_dtype = other.dict_dtypes[key]
+            self_dtype = self[key]
+            other_dtype = other[key]
             if not self_dtype == other_dtype:
                 return False
 
         # Check if there are no additional keys in other instance
-        for other_key in other.dict_dtypes:
-            if other_key not in self.dict_dtypes:
+        for other_key in other:
+            if other_key not in self:
                 return False
 
         return True
 
     def __repr__(self):
-        dictionary = {
-            key: repr(value)
-            for key, value in self.dict_dtypes.items()
-        }
-        return 'Dict({})'.format(repr(dictionary))
+        return 'Dict({})'.format(dict.__repr__(self))
 
     def __str__(self):
-        dictionary = {
+        str_dict = {
             key: str(value)
-            for key, value in self.dict_dtypes.items()
+            for key, value in self.items()
         }
-        return str(dictionary)
+        return str(str_dict)
 
 
 class List(DataType):
@@ -189,10 +235,13 @@ class List(DataType):
     initialization. Example: List(Int())
     """
 
-    def __init__(self, dtype):
+    def __init__(self, dtype, **kwargs):
         """Create a List DataType from a DataType."""
+        super().__init__(**kwargs)
+
         # Check that given dtype is a valid DataType
         if not isinstance(dtype, DataType):
+            print(dtype)
             message = 'Given dtype is not a DataType. (type={})'
             message = message.format(type(dtype))
             raise ValueError(message)
@@ -226,7 +275,7 @@ class List(DataType):
         return 'List({})'.format(repr(self.list_item_type))
 
     def __str__(self):
-        return 'List[{}]'.format(str(self.list_item_type))
+        return '[{}, ...]'.format(str(self.list_item_type))
 
 
 class String(DataType):
@@ -244,10 +293,16 @@ class String(DataType):
         return isinstance(other, str)
 
     def __repr__(self):
+        if self.description:
+            return 'String(description="{}")'.format(self.description)
+
         return 'String()'
 
     def __str__(self):
-        return 'String'
+        if self.description:
+            return '{} (str)'.format(self.description)
+
+        return 'str'
 
 
 class Int(DataType):
@@ -258,10 +313,16 @@ class Int(DataType):
         return isinstance(other, int)
 
     def __repr__(self):
+        if self.description:
+            return 'Int(description="{}")'.format(self.description)
+
         return 'Int()'
 
     def __str__(self):
-        return 'Int'
+        if self.description:
+            return '{} (int)'.format(self.description)
+
+        return 'int'
 
 
 class Bool(DataType):
@@ -272,10 +333,16 @@ class Bool(DataType):
         return isinstance(other, bool)
 
     def __repr__(self):
+        if self.description:
+            return 'Bool(description="{}")'.format(self.description)
+
         return 'Bool()'
 
     def __str__(self):
-        return 'Bool'
+        if self.description:
+            return '{} (bool)'.format(self.description)
+
+        return 'bool'
 
 
 class Float(DataType):
@@ -286,7 +353,13 @@ class Float(DataType):
         return isinstance(other, float)
 
     def __repr__(self):
+        if self.description:
+            return 'Float(description="{}")'.format(self.description)
+
         return 'Float()'
 
     def __str__(self):
-        return 'Float'
+        if self.description:
+            return '{} (float)'.format(self.description)
+
+        return 'float'
