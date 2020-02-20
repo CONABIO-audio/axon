@@ -393,3 +393,19 @@ class Float(DataType):
             return '{} (float)'.format(self.description)
 
         return 'float'
+
+
+class NoneType(DataType):
+    """None DataType."""
+
+    def validate(self, other):
+        """Check if argument is None."""
+        return other is None
+
+    def __repr__(self):
+        """Get full representation."""
+        return 'NoneType()'
+
+    def __str__(self):
+        """Get string representation."""
+        return 'None'

@@ -17,6 +17,7 @@ from .base import Bool
 from .base import List
 from .base import Tuple
 from .base import Dict
+from .base import NoneType
 from .numpy_dtypes import NumpyArray
 
 
@@ -29,5 +30,6 @@ __all__ = [
     'List',
     'Tuple',
     'Dict',
+    'NoneType',
     'NumpyArray'
 ]
