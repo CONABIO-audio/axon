@@ -1,7 +1,18 @@
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: ''
+  hooks:
+    - id: trailing-whitespace
+    - id: fix-encoding-pragma
+
 - repo: https://github.com/pre-commit/mirrors-pylint
   rev: ''
   hooks:
   - id: pylint
+
+- repo: https://github.com/pre-commit/mirrors-autopep8
+  rev: ''
+  hooks:
+    - id: autopep8
 
 - repo: https://github.com/chewse/pre-commit-mirrors-pydocstyle
   rev: ''
