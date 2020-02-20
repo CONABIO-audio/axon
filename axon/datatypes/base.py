@@ -32,6 +32,10 @@ class DataType(ABC):
         """Check if two datatypes are the same."""
         return isinstance(other, type(self))
 
+    def __ne__(self, other):
+        """Check if other is not the same DataType."""
+        return not self.__eq__(other)
+
     def __or__(self, other):
         """Return the conjunction of the two data types."""
         return ConjunctionDataType(self, other)
@@ -79,6 +83,10 @@ class ConjunctionDataType(DataType):
 
         return (self.first == other.second) and (self.second == other.first)
 
+    def __ne__(self, other):
+        """Check if other is not the same DataType."""
+        return not self.__eq__(other)
+
     def __repr__(self):
         """Get full representation."""
         return '{} | {}'.format(repr(self.first), repr(self.second))
@@ -99,6 +107,11 @@ class Tuple(tuple, DataType):
     def __new__(cls, type_array, **kwargs):
         """Create a Tuple from list of datatypes."""
         # pylint: disable=unused-argument
+        if not isinstance(type_array, (tuple, list)):
+            message = 'Tuple argument is not tuple/list. (arg={})'
+            message = message.format(type_array)
+            raise ValueError(message)
+
         # Verify if the entries correspond to an accepted DataType
         for dtype in type_array:
             if not isinstance(dtype, DataType):
@@ -151,6 +164,10 @@ class Tuple(tuple, DataType):
 
         return True
 
+    def __ne__(self, other):
+        """Check if other is not the same DataType."""
+        return not self.__eq__(other)
+
     def __repr__(self):
         """Get full representation."""
         reprs = tuple([repr(dtype) for dtype in self])
@@ -174,6 +191,12 @@ class Dict(dict, DataType):
     def __new__(cls, dtypes_dict, **kwargs):
         """Create a Dict DataType from dictionary of DataTypes."""
         # pylint: disable=unused-argument
+        # Verify dtypes_dict is a dictionary
+        if not isinstance(dtypes_dict, dict):
+            message = "Argument for Dict is not a dictionary. (arg={})"
+            message = message.format(dtypes_dict)
+            raise ValueError(message)
+
         # Verify the DataTypes for the values are valid DataTypes.
         for value in dtypes_dict.values():
             if not isinstance(value, DataType):
@@ -200,6 +223,12 @@ class Dict(dict, DataType):
             if key not in other:
                 return False
             if not value.validate(other[key]):
+                return False
+
+        # Check if there are keys in instance that are not
+        # in the defined dtype
+        for key in other:
+            if key not in self:
                 return False
 
         return True
@@ -231,6 +260,10 @@ class Dict(dict, DataType):
                 return False
 
         return True
+
+    def __ne__(self, other):
+        """Check if other is not the same DataType."""
+        return not self.__eq__(other)
 
     def __repr__(self):
         """Get full representation."""
@@ -290,6 +323,10 @@ class List(DataType):
 
         # Compare list_item_type DataTypes from both Lists
         return self.list_item_type == other.list_item_type
+
+    def __ne__(self, other):
+        """Check if other is not the same DataType."""
+        return not self.__eq__(other)
 
     def __repr__(self):
         """Get full representation."""
