@@ -30,17 +30,14 @@ class NumpyArray(DataType):
 
         # Verify shape is specified as a tuple or list
         if not isinstance(shape, (tuple, list)):
-            message = 'Given shape should be given as a tuple. (type={})'
+            message = 'Shape should be given as a tuple. (type={})'
             message = message.format(type(dtype))
             raise ValueError(message)
 
         # Verify shape has integer values
         for item in shape:
             if not isinstance(item, int):
-                message = (
-                    'All entries of shape should be of type int.'
-                    ' (type={})')
-                message = message.format(type(dtype))
+                message = ('All entries of shape should be of type int.')
                 raise ValueError(message)
 
         super().__init__(**kwargs)
