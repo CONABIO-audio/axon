@@ -1,18 +1,14 @@
--   repo: https://github.com/CONABIO-audio/axon
-    rev: v0.1.1  # pick a git hash / tag to point to
-    hooks:
+- repo: https://github.com/pre-commit/mirrors-pylint
+  rev: ''
+  hooks:
+  - id: pylint
+
+- repo: https://github.com/chewse/pre-commit-mirrors-pydocstyle
+  rev: ''
+  hooks:
     - id: pydocstyle
-      name: pydocstyle
-      entry: pydocstyle
-      language: python
-      types: [file, python]
-    - id: pylint
-      name: pylint
-      entry: pylint
-      language: python
-      types: [file, python]
-    - id: flake8
-      name: flake8
-      entry: flake8
-      language: python
-      types: [file, python]
+
+- repo: https://gitlab.com/pycqa/flake8
+  rev: ''  # pick a git hash / tag to point to
+  hooks:
+  - id: flake8
