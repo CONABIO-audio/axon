@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 DataType base module.
 
@@ -32,9 +33,11 @@ class DataType(ABC):
         return isinstance(other, type(self))
 
     def __or__(self, other):
+        """Return the conjunction of the two data types."""
         return ConjunctionDataType(self, other)
 
     def __ror__(self, other):
+        """Return the conjunction of the two data types."""
         return ConjunctionDataType(other, self)
 
 
@@ -47,6 +50,14 @@ class ConjunctionDataType(DataType):
 
     def __init__(self, first, second, **kwargs):
         """Create a conjunction datatype."""
+        if not isinstance(first, DataType):
+            message = "{} is not a DataType instance".format(first)
+            raise ValueError(message)
+
+        if not isinstance(second, DataType):
+            message = "{} is not a DataType instance".format(second)
+            raise ValueError(message)
+
         super().__init__(**kwargs)
         self.first = first
         self.second = second
@@ -59,6 +70,7 @@ class ConjunctionDataType(DataType):
         return self.second.validate(other)
 
     def __eq__(self, other):
+        """Check if is the same DataType as other."""
         if not isinstance(other, ConjunctionDataType):
             return False
 
@@ -68,6 +80,7 @@ class ConjunctionDataType(DataType):
         return (self.first == other.second) and (self.second == other.first)
 
     def __repr__(self):
+        """Get full representation."""
         return '{} | {}'.format(repr(self.first), repr(self.second))
 
 
@@ -118,6 +131,7 @@ class Tuple(tuple, DataType):
         return True
 
     def __eq__(self, other):
+        """Check if is the same DataType as other."""
         # Check DataType is valid
         if not isinstance(other, DataType):
             return False
@@ -138,10 +152,12 @@ class Tuple(tuple, DataType):
         return True
 
     def __repr__(self):
+        """Get full representation."""
         reprs = tuple([repr(dtype) for dtype in self])
         return 'Tuple({})'.format(repr(reprs))
 
     def __str__(self):
+        """Get string representation."""
         str_tuple = tuple([str(dtype) for dtype in self])
         return str(str_tuple)
 
@@ -189,6 +205,7 @@ class Dict(dict, DataType):
         return True
 
     def __eq__(self, other):
+        """Check if is the same DataType as other."""
         # Check if it is a valid DataType
         if not isinstance(other, DataType):
             return False
@@ -216,9 +233,11 @@ class Dict(dict, DataType):
         return True
 
     def __repr__(self):
+        """Get full representation."""
         return 'Dict({})'.format(dict.__repr__(self))
 
     def __str__(self):
+        """Get string representation."""
         str_dict = {
             key: str(value)
             for key, value in self.items()
@@ -261,6 +280,7 @@ class List(DataType):
         return True
 
     def __eq__(self, other):
+        """Check if is the same DataType as other."""
         if not isinstance(other, DataType):
             return False
 
@@ -272,9 +292,11 @@ class List(DataType):
         return self.list_item_type == other.list_item_type
 
     def __repr__(self):
+        """Get full representation."""
         return 'List({})'.format(repr(self.list_item_type))
 
     def __str__(self):
+        """Get string representation."""
         return '[{}, ...]'.format(str(self.list_item_type))
 
 
@@ -293,12 +315,14 @@ class String(DataType):
         return isinstance(other, str)
 
     def __repr__(self):
+        """Get full representation."""
         if self.description:
             return 'String(description="{}")'.format(self.description)
 
         return 'String()'
 
     def __str__(self):
+        """Get string representation."""
         if self.description:
             return '{} (str)'.format(self.description)
 
@@ -313,12 +337,14 @@ class Int(DataType):
         return isinstance(other, int)
 
     def __repr__(self):
+        """Get full representation."""
         if self.description:
             return 'Int(description="{}")'.format(self.description)
 
         return 'Int()'
 
     def __str__(self):
+        """Get string representation."""
         if self.description:
             return '{} (int)'.format(self.description)
 
@@ -333,12 +359,14 @@ class Bool(DataType):
         return isinstance(other, bool)
 
     def __repr__(self):
+        """Get full representation."""
         if self.description:
             return 'Bool(description="{}")'.format(self.description)
 
         return 'Bool()'
 
     def __str__(self):
+        """Get string representation."""
         if self.description:
             return '{} (bool)'.format(self.description)
 
@@ -353,12 +381,14 @@ class Float(DataType):
         return isinstance(other, float)
 
     def __repr__(self):
+        """Get full representation."""
         if self.description:
-            return 'Float(description="{}")'.format(self.description)
+            return 'rloat(description="{}")'.format(self.description)
 
         return 'Float()'
 
     def __str__(self):
+        """Get string representation."""
         if self.description:
             return '{} (float)'.format(self.description)
 

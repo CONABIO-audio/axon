@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 DataType Module.
 
@@ -16,6 +17,7 @@ from .base import Bool
 from .base import List
 from .base import Tuple
 from .base import Dict
+from .numpy_dtypes import NumpyArray
 
 
 __all__ = [
@@ -27,7 +29,5 @@ __all__ = [
     'List',
     'Tuple',
     'Dict',
+    'NumpyArray'
 ]
-
-# TODO: Implementar Numpy Array
-# TODO: Implementar DataFrame

@@ -4,10 +4,13 @@
     - id: trailing-whitespace
     - id: fix-encoding-pragma
 
-- repo: https://github.com/pre-commit/mirrors-pylint
-  rev: ''
+- repo: local
   hooks:
   - id: pylint
+    name: pylint
+    entry: pylint
+    language: system
+    types: [python]
 
 - repo: https://github.com/pre-commit/mirrors-autopep8
   rev: ''
