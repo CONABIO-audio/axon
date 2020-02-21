@@ -72,3 +72,42 @@ class DataFrame(DataType):
                 if not value.validate(entry):
                     return False         
         return True
+    
+    def __eq__(self, other):
+        """Check if other is the same NumpyArray DataType."""
+        if not isinstance(other, DataType):
+            return False
+
+        # Verify it is a list from attribute nparray_item_type
+        if not hasattr(other, 'pandas_dict'):
+            return False
+
+        if not self.shape == other.shape:
+            return False
+
+         # Verify column names are correct
+        for key, value in self.pandas_dict.items():
+            if key not in other.pandas_dict:
+                return False
+            if not value==other.pandas_dict[key]:
+                return False
+
+        # Check if there are keys in instance that are not
+        # in the defined dtype
+        for key in other.pandas_dict:
+            if key not in self.pandas_dict:
+                return False
+        return True
+    
+    def __repr__(self):
+        """Get full representation."""
+        return 'DataFrame({}, {})'.format(dict.__repr__(self.pandas_dict), 
+                          self.shape)
+
+    def __str__(self):
+        """Get string representation."""
+        str_dict = {
+            key: str(value)
+            for key, value in self.pandas_dict.items()
+        }
+        return str(str_dict)
