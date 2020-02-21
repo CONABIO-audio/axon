@@ -4,16 +4,27 @@ Pandas dataframe DataTypes module.
 
 Pandas dataframes as DataTypes are defined in this module.
 """
-#import pandas as pd
+import pandas as pd
 from axon.datatypes.base import DataType
+
+
 class DataFrame(DataType):
+    """Pandas dataframe DataType.
+
+    We create a class for pandasdataframes. At initialization the
+    column names and the DataType of the entries must be defined 
+    in a dictionary. The shape of the dataframe must be specified
+    as well.
+
+    Examples
+    --------
+    DataFrame({'col1': Float(), 'col2':Int()}, (5,2))
+    """ 
     def __init__(self, dtypes_dict, shape, **kwargs):
         
         # Verify description of dataframe is a dictionary
         if not isinstance(dtypes_dict, dict):
             message = "Description of dataframe should be a dictionary"
-            message = message +"." (arg={})
-            message = message.format(dtypes_dict)
             raise ValueError(message)
 
         # Verify the DataTypes for the values are valid DataTypes.
@@ -28,7 +39,12 @@ class DataFrame(DataType):
             message = 'Shape should be given as a tuple. (type={})'
             message = message.format(type(shape))
             raise ValueError(message)
-
+            
+        # Verify length of shape is 2
+        if (len(shape)!=2):
+            message = 'Shape should be of length 2 for DataFrame DataType'
+            raise ValueError(message)
+            
         # Verify shape has integer values
         for item in shape:
             if not isinstance(item, int):
@@ -40,5 +56,19 @@ class DataFrame(DataType):
         self.shape=shape
         
     def validate(self, other):
+        # Verify instance is a pdndas dataframe
+        if not isinstance(other, pd.DataFrame):
+            return False
         
-        pass
+        # Verify shape is correct
+        if not self.shape == other.shape:
+            return False
+        
+        # Verify column names are correct
+        for key, value in self.pandas_dict.items():
+            if key not in other.columns:
+                return False
+            for entry in other[key]:
+                if not value.validate(entry):
+                    return False         
+        return True
