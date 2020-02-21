@@ -10,4 +10,3 @@ def test_validate_dataframe():
     D=dt.DataFrame({'col1':dt.Int(), 'col2': dt.String(), 'col3':dt.Float()}, (2,3))
     assert  D.validate(df)
     assert not D.validate(d)
-    assert False
