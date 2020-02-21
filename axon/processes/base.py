@@ -19,8 +19,8 @@ class Process(ABC):
 
     Examples
     --------
-    To create a process that generates spectrograms from a numpy array holding
-    a signal, one could define:
+    To create a process that generates spectrograms from the wav numpy array,
+    one could define:
 
     .. code-block:: python
         import numpy as np
@@ -94,9 +94,18 @@ class Process(ABC):
         self.logger.critical(*args, **kwargs)
 
     @abstractmethod
-    def run(self, *inputs, **kwargs):
+    def run(self, *args, **kwargs):
         """Run the process.
 
         This method contains all the computation done by the process.
         It must be overwritten by the user.
         """
+
+    def __call__(self, *args, **kwargs):
+        """Run the process.
+
+        This method is the main entrypoint to the Process. This methods
+        behaviour should not be overwritten to define the process computations.
+        For this use run.
+        """
+        return self.run(*args, **kwargs)
