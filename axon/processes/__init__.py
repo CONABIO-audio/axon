@@ -7,9 +7,15 @@ chunks of computation into a reusable function.
 """
 from .base import Process
 from .mlflow_process import MLFlowProcess
+from .action_process import ActionProcess
+from .parametrized_process import ParametrizedProcess
+from .torch_process import TorchNnModuleProcess
 
 
 __all__ = [
     'Process',
-    'MLFlowProcess'
+    'MLFlowProcess',
+    'ActionProcess',
+    'ParametrizedProcess',
+    'TorchNnModuleProcess'
 ]
