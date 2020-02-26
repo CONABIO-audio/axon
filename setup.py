@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+"""Instalation script."""
 import os
 from setuptools import find_packages, setup
 
@@ -10,18 +12,34 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 setup(
     name='axon-conabio2',
     version='0.1.1',
-    packages=find_packages(),
+    packages=find_packages(exclude=['tests']),
     include_package_data=True,
     license='BSD License',
     description='Machine Learning Admin system for Conabio',
     long_description=README,
+    entry_points={
+        "console_scripts": [
+            "axon = axon.commands.cli.main:main"
+        ]
+    },
     url='https://github.com/CONABIO-audio/axon',
-    author='CONABIO, Dalia Camacho García Formentí, Gustavo Everardo Robredo Esquivelzeta, Santiago Martínez Balvanera',
-    author_email='dcamacho@conabio.gob.mx, erobredo@conabio.gob.mx, smartinez@conabio.gob.mx',
+    author=(
+        'CONABIO, '
+        'Dalia Camacho García Formentí, '
+        'Gustavo Everardo Robredo Esquivelzeta, '
+        'Santiago Martínez Balvanera'
+    ),
+    author_email=(
+        'dcamacho@conabio.gob.mx, '
+        'erobredo@conabio.gob.mx, '
+        'smartinez@conabio.gob.mx'
+    ),
     install_requires=[
         'mlflow',
-        'luigi',
         'dvc',
+        'click',
+        'gitpython',
+        'Jinja2'
     ],
     classifiers=[
         'Programming Language :: Python :: 3.6',

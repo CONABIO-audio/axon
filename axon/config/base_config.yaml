@@ -1,0 +1,15 @@
+# The directory structure of a new axon project
+directory_structure:
+  - trainings
+  - models
+  - datasets
+  - preprocessors
+  - evaluators
+  - scripts
+
+# Single or list of configuration files from which to read and replace settings. Will
+# be read and replaced in order when is a list.
+config_files:
+
+# Name of the configuration file within an axon project
+config_file_name: .axon.config.yaml

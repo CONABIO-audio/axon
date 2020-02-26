@@ -1,0 +1,28 @@
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: ''
+  hooks:
+    - id: trailing-whitespace
+    - id: fix-encoding-pragma
+
+- repo: local
+  hooks:
+  - id: pylint
+    name: pylint
+    entry: pylint
+    language: system
+    types: [python]
+
+- repo: https://github.com/pre-commit/mirrors-autopep8
+  rev: ''
+  hooks:
+    - id: autopep8
+
+- repo: https://github.com/chewse/pre-commit-mirrors-pydocstyle
+  rev: ''
+  hooks:
+    - id: pydocstyle
+
+- repo: https://gitlab.com/pycqa/flake8
+  rev: ''  # pick a git hash / tag to point to
+  hooks:
+  - id: flake8

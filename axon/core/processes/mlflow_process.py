@@ -6,7 +6,7 @@ This modules contains the base definition of a process that utilizes mlflow to
 log run information, and associated mlflow utilities.
 """
 import mlflow
-from axon.processes.base import Process
+from axon.core.processes.base import Process
 
 
 class MLFlowMixin:
