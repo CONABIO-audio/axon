@@ -33,4 +33,6 @@ def create_repository(path):
         raise ValueError(message)
 
     repository = Repo.init(git_path, bare=True)
+    print(repository.is_dirty())
+    print(repository.untracked_files)
     return repository
