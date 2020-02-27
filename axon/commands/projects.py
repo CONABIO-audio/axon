@@ -9,10 +9,12 @@ import os
 
 from axon.config import get_config
 from .git import create_repository as create_git_repository
+from .git import add_all_files_to_repository
+from .git import install_precommit_hooks
 from .templates import get_template
 
 
-def create_project(name, path):
+def create_project(name: str, path: str):
     """Create a new project directory.
 
     Parameters
@@ -27,14 +29,20 @@ def create_project(name, path):
             ' another name')
         raise ValueError(message)
 
+    # Create a  new repository directory
     os.makedirs(project_directory)
+    repository = create_git_repository(project_directory)
 
+    # Add basic files and the directory structure
     add_basic_files(project_directory)
     create_project_structure(name, project_directory)
-    create_git_repository(project_directory)
+
+    # Commit the new files to git
+    add_all_files_to_repository(repository, 'First commit')
+    install_precommit_hooks(repository)
 
 
-def add_basic_files(path, context=None):
+def add_basic_files(path: str, context: dict = None):
     """Add basic files to new git repository."""
     if context is None:
         context = {}
@@ -85,7 +93,7 @@ def add_basic_files(path, context=None):
         requirements.write(template.render(**context))
 
 
-def create_project_structure(name, path):
+def create_project_structure(name: str, path: str):
     """Create the directory structure within a project directory."""
     config = get_config()
     directory_structure = config.get('directory_structure', None)
