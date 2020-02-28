@@ -43,6 +43,9 @@ def init(ctx, no_scm=False, force=False, phelp=False, quiet=False,
 
     Returns
     -------
+    command: str
+        The executed command.
+
     command_output: str
         The stdout resulting from running the process in shell if "quiet" is
         False.
@@ -98,6 +101,9 @@ def remote(ctx, command, phelp=False, quiet=False, verbose=False):
 
     Returns
     -------
+    command: str
+        The executed command.
+
     command_output: str
         The stdout resulting from running the process in shell if "quiet" is
         False.
@@ -117,7 +123,7 @@ def remote(ctx, command, phelp=False, quiet=False, verbose=False):
             args += ['-v']
         args += [command]
         return run_shell_process(args)
-    raise ValueError('Command ', command, ' is not a valid command for dvc \
+    raise DvcExecutionError('Command ', command, ' is not a valid command for dvc \
         remote. Options are: "add | default | remove | modify | list"')
 
 
@@ -191,6 +197,9 @@ def pull(ctx, targets, remote, all_branches=False, all_tags=False,
 
     Returns
     -------
+    command: str
+        The executed command.
+
     command_output: str
         The stdout resulting from running the process in shell if "quiet" is
         False.
@@ -288,6 +297,9 @@ def push(ctx, targets, remote, all_branches=False, all_tags=False,
 
     Returns
     -------
+    command: str
+        The executed command.
+
     command_output: str
         The stdout resulting from running the process in shell if "quiet" is
         False.
@@ -368,6 +380,9 @@ def add(ctx, targets, file=None, phelp=False, quiet=True, verbose=False,
 
     Returns
     -------
+    command: str
+        The executed command.
+
     command_output: str
         The stdout resulting from running the process in shell if "quiet" is
         False.
@@ -494,6 +509,9 @@ def run(ctx, command, wdir, deps=[], outs=[], outs_no_cache=[], metrics=[],
 
     Returns
     -------
+    command: str
+        The executed command.
+
     command_output: str
         The stdout resulting from running the process in shell if "quiet" is
         False.
@@ -568,6 +586,9 @@ def pipeline(ctx, command='show', phelp=False, quiet=False, verbose=False):
 
     Returns
     -------
+    command: str
+        The executed command.
+
     command_output: str
         The stdout resulting from running the process in shell if "quiet" is
         False.
@@ -587,7 +608,7 @@ def pipeline(ctx, command='show', phelp=False, quiet=False, verbose=False):
             args += ['-v']
         args += [command]
         return run_shell_process(args)
-    raise ValueError('Command ', command, ' is not a valid command for dvc \
+    raise DvcExecutionError('Command ', command, ' is not a valid command for dvc \
         pipeline. Options are: "show | list"')
 
 
@@ -603,6 +624,9 @@ def run_shell_process(args):
 
     Returns
     -------
+    command: str
+        The executed command.
+
     command_output: str
         The stdout resulting from running the process in shell if "quiet" is
         False.
@@ -616,7 +640,7 @@ def run_shell_process(args):
     stdout, stderr = proc.communicate()
     if stderr:
         raise DvcExecutionError(stderr)
-    return stdout
+    return " ".join(args), stdout
 
 
 def get_help(dvc_command):
@@ -631,6 +655,9 @@ def get_help(dvc_command):
 
     Returns
     -------
+    command: str
+        The executed command.
+
     help_str: str
         The original help message of dvc as a string.
 
@@ -644,6 +671,6 @@ def get_help(dvc_command):
     try:
         help_str = check_output(args)
         print(help_str)
-        return help_str
-    except DvcExecutionError:
-        print("Help command failed.")
+        return " ".join(args), help_str
+    except Exception:
+        raise DvcExecutionError("Help command failed.")
