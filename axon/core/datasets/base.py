@@ -8,6 +8,40 @@ from abc import abstractmethod
 from axon.commands.dvc import run as dvc_run
 
 
+class TrackedStorage:
+    """Dvc tracked storage.
+
+    Defined as a main data output together with parameters to regenerate it
+    tracking the process with dvc.
+    """
+
+    def __init__(self, data, script, wdir, deps, outs,
+                 outs_no_cache=[]):
+        if data not in outs:
+            raise Exception("data must be one of the outputs.")
+        self.data = data
+        self.script = script
+        self.wdir = wdir
+        self.deps = deps
+        self.outs = outs
+        self.outs_no_cache = outs_no_cache
+
+    def build(self, ctx):
+        """Build storage.
+
+        Parameters
+        ----------
+        ctx: dict
+            Context for dvc and git.
+        """
+        command, result = dvc_run(ctx, self.script, self.wdir, self.deps,
+                                  self.outs, self.outs_no_cache)
+        print("Building storage using command: ")
+        print(command)
+        print("Finished! Command output: ")
+        print(result)
+
+
 class Dataset(ABC):
     """Dataset Base Class.
 
@@ -16,8 +50,7 @@ class Dataset(ABC):
     """
 
     datum_datatype = None
-    build_commands = []
-    data = []
+    storages = []
 
     @abstractmethod
     def iter(self):
@@ -25,40 +58,33 @@ class Dataset(ABC):
 
     @abstractmethod
     def len(self):
-        """Return the length of the dataset."""
+        """Return the length of this dataset."""
 
     @abstractmethod
     def get(self, uid):
-        """Return example with uid."""
+        """Return example with uid.
 
-    def build(self):
-        dvc_run(self.build_command)
+        Parameters
+        ----------
+        uid: str
+            Unique identifier of data element to retrieve.
 
+        Returns
+        -------
+        data: list
+            Match as only element or empty list.
+        """
 
+    def build(self, ctx):
+        """Build storages.
 
-
-### 
-class TrainingDataset(Dataset):
-    data = [
-        'data/species/species1.tfrecords',
-        'data/species/species2.tfrecords',
-        'data/noise.tfrecords',
-        'data/agumentations/species1.tfrecords',
-        'data/metadata.sqlite',
-    ]
-
-    build_commands = [
-        'bat_detector.scripts.make_species_tfrecords',
-        'bat_detector.scripts.generate_false_data',
-        'bat_detector.'
-    ]
-
-    def __init__(self):
-        self.species1 = self.load('data/species/species1.tfrecords')
-        self.species2 = self.load('data/species/species2.tfrecords')
-        self.noise = self.load('data/noise.tfrecords')
-        self.artificial = self.load('data/augmentations/model1.tfrecords')
-        self.metadata = self.load('data/metadata.sqlite')
-
-    def iter(self):
-        return self.interlace(self.species1, self.species2, self.noise)
+        Parameters
+        ----------
+        ctx: dict
+            Context for dvc and git.
+        """
+        if len(self.storages) == 0:
+            raise Exception("No storages. This dataset uses data directly from \
+                source.")
+        for storage in self.storages:
+            storage.build(ctx)

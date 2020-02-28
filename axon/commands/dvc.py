@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """DVC commands."""
-from subprocess import Popen, PIPE, check_output
+from subprocess import Popen, PIPE
+from axon.commands.git import get_repository
 
 
 class DvcExecutionError(Exception):
@@ -10,8 +11,107 @@ class DvcExecutionError(Exception):
     """
 
 
+def run_command(args, exec_path=None):
+    """Run process and return stdout or raise an execution error.
+
+    A simple method that runs commands in shell.
+
+    Parameters
+    ----------
+    args: list
+        The complete list of arguments to execute as strings.
+
+    exec_path: str
+        Path from where to execute command.
+
+    Returns
+    -------
+    command: str
+        The executed command.
+
+    command_output: str
+        The stdout resulting from running the process in shell.
+
+    Raises
+    ------
+    DvcExecutionError
+        If the command fails to execute and prints original stderr output.
+    """
+    proc = Popen(args, stdout=PIPE, stderr=PIPE, cwd=exec_path)
+    stdout, stderr = proc.communicate()
+    if stderr:
+        raise DvcExecutionError(stderr)
+    return " ".join(args), stdout
+
+
+def get_help(dvc_command):
+    """Return help string according to dvc command.
+
+    Simple method to return help output for any dvc command.
+
+    Parameters
+    ----------
+    dvc_command: str
+        Specify the command for help retrieval.
+
+    Returns
+    -------
+    command: str
+        The executed command.
+
+    help_str: str
+        The original help message of dvc as a string.
+
+    Raises
+    ------
+    DvcExecutionError
+        If the command fails to execute.
+    """
+    args = ['dvc', dvc_command]
+    args.append('-h')
+    command, help_str = run_command(args)
+    print(help_str)
+    return command, help_str
+
+
+def git_run_command(args, project_directory, git_commit=True):
+    """Run process and git commit if no errors occur.
+
+    A simple method that runs commands in shell.
+
+    Parameters
+    ----------
+    args: list
+        The complete list of arguments to execute as strings.
+
+    project_directory: str
+        Path to project directory.
+
+    git_commit: bool
+        Wether to commit to git or not.
+
+    Returns
+    -------
+    command: str
+        The executed command.
+
+    command_output: str
+        The stdout resulting from running the process in shell.
+
+    Raises
+    ------
+    DvcExecutionError
+        If the command fails to execute and prints original stderr output.
+    """
+    command, stdout = run_command(args, project_directory)
+    if git_commit:
+        repo = get_repository(project_directory)
+        repo.index.commit(command)
+    return command, stdout
+
+
 def init(ctx, no_scm=False, force=False, phelp=False, quiet=False,
-         verbose=False):
+         verbose=False, git_commit=True):
     """Wrap dvc init command.
 
     This command initializes a DVC project on a directory.
@@ -41,14 +141,16 @@ def init(ctx, no_scm=False, force=False, phelp=False, quiet=False,
     verbose: bool
         Displays detailed tracing information.
 
+    git_commit: bool
+        Wether to commit to git or not.
+
     Returns
     -------
     command: str
         The executed command.
 
     command_output: str
-        The stdout resulting from running the process in shell if "quiet" is
-        False.
+        The stdout resulting from running the process in shell.
 
     Raises
     ------
@@ -66,10 +168,11 @@ def init(ctx, no_scm=False, force=False, phelp=False, quiet=False,
         args += ['-q']
     if verbose:
         args += ['-v']
-    return run_shell_process(args)
+    return git_run_command(args, ctx["project_dir"], git_commit)
 
 
-def remote(ctx, command, phelp=False, quiet=False, verbose=False):
+def remote(ctx, command, phelp=False, quiet=False, verbose=False,
+           git_commit=True):
     """Wrap dvc remote command.
 
     A set of commands to set up and manage data remotes: add, default, list,
@@ -99,14 +202,16 @@ def remote(ctx, command, phelp=False, quiet=False, verbose=False):
     verbose: bool
         Displays detailed tracing information.
 
+    git_commit: bool
+        Wether to commit to git or not.
+
     Returns
     -------
     command: str
         The executed command.
 
     command_output: str
-        The stdout resulting from running the process in shell if "quiet" is
-        False.
+        The stdout resulting from running the process in shell.
 
     Raises
     ------
@@ -122,14 +227,14 @@ def remote(ctx, command, phelp=False, quiet=False, verbose=False):
         if verbose:
             args += ['-v']
         args += [command]
-        return run_shell_process(args)
+        return git_run_command(args, ctx["project_dir"], git_commit)
     raise DvcExecutionError('Command ', command, ' is not a valid command for dvc \
         remote. Options are: "add | default | remove | modify | list"')
 
 
 def pull(ctx, targets, remote, all_branches=False, all_tags=False,
          with_deps=False, recursive=False, force=False, jobs=None, phelp=False,
-         quiet=True, verbose=False):
+         quiet=True, verbose=False, git_commit=True):
     """Wrap dvc pull command.
 
     Downloads missing files and directories from remote storage to the cache
@@ -195,14 +300,16 @@ def pull(ctx, targets, remote, all_branches=False, all_tags=False,
     verbose: bool
         Displays detailed tracing information.
 
+    git_commit: bool
+        Wether to commit to git or not.
+
     Returns
     -------
     command: str
         The executed command.
 
     command_output: str
-        The stdout resulting from running the process in shell if "quiet" is
-        False.
+        The stdout resulting from running the process in shell.
 
     Raises
     ------
@@ -232,12 +339,12 @@ def pull(ctx, targets, remote, all_branches=False, all_tags=False,
     if force:
         args += ['-f']
     args += targets
-    return run_shell_process(args)
+    return git_run_command(args, ctx["project_dir"], git_commit)
 
 
 def push(ctx, targets, remote, all_branches=False, all_tags=False,
          with_deps=False, recursive=False, jobs=None, phelp=False,
-         quiet=True, verbose=False):
+         quiet=True, verbose=False, git_commit=True):
     """Wrap dvc push command.
 
     Uploads files or directories tracked by DVC to remote storage.
@@ -295,14 +402,16 @@ def push(ctx, targets, remote, all_branches=False, all_tags=False,
     verbose: bool
         Displays detailed tracing information.
 
+    git_commit: bool
+        Wether to commit to git or not.
+
     Returns
     -------
     command: str
         The executed command.
 
     command_output: str
-        The stdout resulting from running the process in shell if "quiet" is
-        False.
+        The stdout resulting from running the process in shell.
 
     Raises
     ------
@@ -330,11 +439,11 @@ def push(ctx, targets, remote, all_branches=False, all_tags=False,
     if recursive:
         args += ['-R']
     args += targets
-    return run_shell_process(args)
+    return git_run_command(args, ctx["project_dir"], git_commit)
 
 
 def add(ctx, targets, file=None, phelp=False, quiet=True, verbose=False,
-        recursive=False, no_commit=False):
+        recursive=False, no_commit=False, git_commit=True):
     """Wrap dvc add command.
 
     Track data files or directories with DVC, by creating a corresponding
@@ -378,14 +487,16 @@ def add(ctx, targets, file=None, phelp=False, quiet=True, verbose=False,
         analogous to using git add before git commit. Use dvc commit when ready
         to commit the results to cache.
 
+    git_commit: bool
+        Wether to commit to git or not.
+
     Returns
     -------
     command: str
         The executed command.
 
     command_output: str
-        The stdout resulting from running the process in shell if "quiet" is
-        False.
+        The stdout resulting from running the process in shell.
 
     Raises
     ------
@@ -406,13 +517,14 @@ def add(ctx, targets, file=None, phelp=False, quiet=True, verbose=False,
     if file is not None:
         args += ['-f', file]
     args += targets
-    return run_shell_process(args)
+    return git_run_command(args, ctx["project_dir"], git_commit)
 
 
 def run(ctx, command, wdir, deps=[], outs=[], outs_no_cache=[], metrics=[],
         metrics_no_cache=[], file=None, no_exec=False,
         overwrite_dvcfile=False, ignore_build_cache=False, no_commit=False,
-        always_changed=False, phelp=False, quiet=False, verbose=False):
+        always_changed=False, phelp=False, quiet=False, verbose=False,
+        git_commit=True):
     """Wrap dvc run command.
 
     Generate a stage file (DVC-file) from a given command and execute the
@@ -507,14 +619,16 @@ def run(ctx, command, wdir, deps=[], outs=[], outs_no_cache=[], metrics=[],
     verbose: bool
         Displays detailed tracing information.
 
+    git_commit: bool
+        Wether to commit to git or not.
+
     Returns
     -------
     command: str
         The executed command.
 
     command_output: str
-        The stdout resulting from running the process in shell if "quiet" is
-        False.
+        The stdout resulting from running the process in shell.
 
     Raises
     ------
@@ -555,7 +669,7 @@ def run(ctx, command, wdir, deps=[], outs=[], outs_no_cache=[], metrics=[],
         args += ['-q']
     if verbose:
         args += ['-v']
-    return run_shell_process(args)
+    return git_run_command(args, ctx["project_dir"], git_commit)
 
 
 def pipeline(ctx, command='show', phelp=False, quiet=False, verbose=False):
@@ -590,8 +704,7 @@ def pipeline(ctx, command='show', phelp=False, quiet=False, verbose=False):
         The executed command.
 
     command_output: str
-        The stdout resulting from running the process in shell if "quiet" is
-        False.
+        The stdout resulting from running the process in shell.
 
     Raises
     ------
@@ -607,70 +720,6 @@ def pipeline(ctx, command='show', phelp=False, quiet=False, verbose=False):
         if verbose:
             args += ['-v']
         args += [command]
-        return run_shell_process(args)
+        return run_command(args, ctx["project_dir"])
     raise DvcExecutionError('Command ', command, ' is not a valid command for dvc \
         pipeline. Options are: "show | list"')
-
-
-def run_shell_process(args):
-    """Run process and return stdout or raises an execution error.
-
-    A simple method that runs commands in shell.
-
-    Parameters
-    ----------
-    args: list
-        The complete list of arguments to execute as strings.
-
-    Returns
-    -------
-    command: str
-        The executed command.
-
-    command_output: str
-        The stdout resulting from running the process in shell if "quiet" is
-        False.
-
-    Raises
-    ------
-    DvcExecutionError
-        If the command fails to execute and prints original stderr output.
-    """
-    proc = Popen(args, stdout=PIPE, stderr=PIPE)
-    stdout, stderr = proc.communicate()
-    if stderr:
-        raise DvcExecutionError(stderr)
-    return " ".join(args), stdout
-
-
-def get_help(dvc_command):
-    """Return help string according to dvc command.
-
-    Simple method to return help output for any dvc command.
-
-    Parameters
-    ----------
-    dvc_command: str
-        Specify the command for help retrieval.
-
-    Returns
-    -------
-    command: str
-        The executed command.
-
-    help_str: str
-        The original help message of dvc as a string.
-
-    Raises
-    ------
-    DvcExecutionError
-        If the command fails to execute.
-    """
-    args = ['dvc', dvc_command]
-    args.append('-h')
-    try:
-        help_str = check_output(args)
-        print(help_str)
-        return " ".join(args), help_str
-    except Exception:
-        raise DvcExecutionError("Help command failed.")
