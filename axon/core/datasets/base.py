@@ -5,7 +5,7 @@ This module defines the basic Dataset class.
 """
 from abc import ABC
 from abc import abstractmethod
-from axon.commands.dvc import run as dvc_run
+from axon.commands.dvc import run as dvc_run, add as dvc_add
 
 
 class TrackedStorage:
@@ -14,17 +14,30 @@ class TrackedStorage:
     Defined as a main data output together with parameters to regenerate it
     tracking the process with dvc.
     """
+    data = None
+    script = None
+    wdir = None
+    deps = None
+    outs = None
+    outs_no_cache = None
 
-    def __init__(self, data, script, wdir, deps, outs,
+    def __init__(self, data, script=None, wdir=None, deps=[], outs=[],
                  outs_no_cache=[]):
-        if data not in outs:
-            raise Exception("data must be one of the outputs.")
+        if self.data is None:
+            raise Exception("'data' can not be undefined.")
         self.data = data
-        self.script = script
-        self.wdir = wdir
-        self.deps = deps
-        self.outs = outs
-        self.outs_no_cache = outs_no_cache
+        if script is not None:
+            if data not in outs:
+                raise Exception("'data' must be one of the outputs if 'script' \
+                is defined.")
+            if wdir is None:
+                raise Exception("'wdir' can not be None if 'script' is \
+                defined.")
+            self.script = script
+            self.wdir = wdir
+            self.deps = deps
+            self.outs = outs
+            self.outs_no_cache = outs_no_cache
 
     def build(self, ctx):
         """Build storage.
@@ -34,12 +47,16 @@ class TrackedStorage:
         ctx: dict
             Context for dvc and git.
         """
-        command, result = dvc_run(ctx, self.script, self.wdir, self.deps,
-                                  self.outs, self.outs_no_cache)
-        print("Building storage using command: ")
-        print(command)
-        print("Finished! Command output: ")
-        print(result)
+        if self.script is not None:
+            command, result = dvc_run(ctx, self.script, self.wdir, self.deps,
+                                      self.outs, self.outs_no_cache)
+            print("Building storage using command: ")
+            print(command)
+            print("Finished! Command output: ")
+            print(result)
+        print("Adding data files to dvc tracking...")
+        command, result = dvc_add(ctx, targets=[self.data], recursive=True)
+        print("Done! Successfully added dvc tracking of " + self.data)
 
 
 class Dataset(ABC):
@@ -49,8 +66,10 @@ class Dataset(ABC):
     datatype.
     """
 
-    datum_datatype = None
-    storages = []
+    storages = None
+
+    def __init__(self, storages):
+        self.storages = storages
 
     @abstractmethod
     def iter(self):
@@ -83,8 +102,5 @@ class Dataset(ABC):
         ctx: dict
             Context for dvc and git.
         """
-        if len(self.storages) == 0:
-            raise Exception("No storages. This dataset uses data directly from \
-                source.")
         for storage in self.storages:
             storage.build(ctx)
