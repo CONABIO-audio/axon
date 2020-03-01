@@ -93,6 +93,10 @@ class Process(ABC):
         """Log message with critical level."""
         self.logger.critical(*args, **kwargs)
 
+    def run_with_dvc(self, exec_path, **kwargs):
+        return dvc_run(exec_path, command=self.script, outs=self.outs,
+                       deps=self.deps, **kwargs)
+
     @abstractmethod
     def run(self, *args, **kwargs):
         """Run the process.

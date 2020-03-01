@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """DVC commands."""
+#  pylint: disable=R0912,R0913,R0914
 from subprocess import Popen, PIPE
-from axon.commands.git import get_repository
 
 
 class DvcExecutionError(Exception):
@@ -74,44 +74,13 @@ def get_help(dvc_command):
     return command, help_str
 
 
-def git_run_command(args, project_directory, git_commit=True):
-    """Run process and git commit if no errors occur.
-
-    A simple method that runs commands in shell.
-
-    Parameters
-    ----------
-    args: list
-        The complete list of arguments to execute as strings.
-
-    project_directory: str
-        Path to project directory.
-
-    git_commit: bool
-        Wether to commit to git or not.
-
-    Returns
-    -------
-    command: str
-        The executed command.
-
-    command_output: str
-        The stdout resulting from running the process in shell.
-
-    Raises
-    ------
-    DvcExecutionError
-        If the command fails to execute and prints original stderr output.
-    """
-    command, stdout = run_command(args, project_directory)
-    if git_commit:
-        repo = get_repository(project_directory)
-        repo.index.commit(command)
-    return command, stdout
-
-
-def init(ctx, no_scm=False, force=False, phelp=False, quiet=False,
-         verbose=False, git_commit=True):
+def init(
+        exec_path,
+        no_scm=False,
+        force=False,
+        phelp=False,
+        quiet=False,
+        verbose=False):
     """Wrap dvc init command.
 
     This command initializes a DVC project on a directory.
@@ -120,8 +89,8 @@ def init(ctx, no_scm=False, force=False, phelp=False, quiet=False,
 
     Parameters
     ----------
-    ctx: dict
-        Context for dvc and git.
+    exec_path: str
+        Path from where to execute command.
 
     no_scm: bool
         Skip Git specific initialization, .dvc/.gitignore will not be written.
@@ -141,9 +110,6 @@ def init(ctx, no_scm=False, force=False, phelp=False, quiet=False,
     verbose: bool
         Displays detailed tracing information.
 
-    git_commit: bool
-        Wether to commit to git or not.
-
     Returns
     -------
     command: str
@@ -159,20 +125,24 @@ def init(ctx, no_scm=False, force=False, phelp=False, quiet=False,
     """
     if phelp:
         return get_help('init')
+
     args = ['dvc', 'init']
     if no_scm:
         args += ['--no-scm']
+
     if force:
         args += ['-f']
+
     if quiet:
         args += ['-q']
+
     if verbose:
         args += ['-v']
-    return git_run_command(args, ctx["project_dir"], git_commit)
+
+    return run_command(args, exec_path)
 
 
-def remote(ctx, command, phelp=False, quiet=False, verbose=False,
-           git_commit=True):
+def remote(exec_path, command, phelp=False, quiet=False, verbose=False):
     """Wrap dvc remote command.
 
     A set of commands to set up and manage data remotes: add, default, list,
@@ -180,8 +150,8 @@ def remote(ctx, command, phelp=False, quiet=False, verbose=False,
 
     Parameters
     ----------
-    ctx: dict
-        Context for dvc and git.
+    exec_path: str
+        Path from where to execute command.
 
     command: str
         Determines the behaviour of this method according to the following
@@ -202,9 +172,6 @@ def remote(ctx, command, phelp=False, quiet=False, verbose=False,
     verbose: bool
         Displays detailed tracing information.
 
-    git_commit: bool
-        Wether to commit to git or not.
-
     Returns
     -------
     command: str
@@ -220,21 +187,36 @@ def remote(ctx, command, phelp=False, quiet=False, verbose=False,
     """
     if phelp:
         return get_help('remote')
+
     if command in ['add', 'default', 'remove', 'modify', 'list']:
         args = ['dvc', 'remote']
+
         if quiet:
             args += ['-q']
+
         if verbose:
             args += ['-v']
+
         args += [command]
-        return git_run_command(args, ctx["project_dir"], git_commit)
+        return run_command(args, exec_path)
+
     raise DvcExecutionError('Command ', command, ' is not a valid command for dvc \
         remote. Options are: "add | default | remove | modify | list"')
 
 
-def pull(ctx, targets, remote, all_branches=False, all_tags=False,
-         with_deps=False, recursive=False, force=False, jobs=None, phelp=False,
-         quiet=True, verbose=False, git_commit=True):
+def pull(  # noqa: C901
+        exec_path,
+        targets,
+        remote_storage,
+        all_branches=False,
+        all_tags=False,
+        with_deps=False,
+        recursive=False,
+        force=False,
+        jobs=None,
+        phelp=False,
+        quiet=False,
+        verbose=False):
     """Wrap dvc pull command.
 
     Downloads missing files and directories from remote storage to the cache
@@ -243,14 +225,14 @@ def pull(ctx, targets, remote, all_branches=False, all_tags=False,
 
     Parameters
     ----------
-    ctx: dict
-        Context for dvc and git.
+    exec_path: str
+        Path from where to execute command.
 
     targets: list
         Limit command scope to these DVC-files. Using 'recursive', directories
         to search DVC-files in can also be given.
 
-    remote: str
+    remote_storage: str
         Name of the remote storage to pull from (see dvc remote list). The
         argument REMOTE is a remote name defined using dvc remote.
 
@@ -285,10 +267,10 @@ def pull(ctx, targets, remote, all_branches=False, all_tags=False,
 
     jobs: int
         Number of threads to run simultaneously to handle the downloading of
-        files from the remote. The default value is 4 * cpu_count(). For SSH
-        remotes, the default is just 4. Using more jobs may improve the total
-        download speed if a combination of small and large files are being
-        fetched.
+        files from the remote storage. The default value is 4 * cpu_count().
+        For SSH remotes, the default is just 4. Using more jobs may improve the
+        total download speed if a combination of small and large files are
+        being fetched.
 
     phelp: bool
         Returns original dvc usage/help message.
@@ -299,9 +281,6 @@ def pull(ctx, targets, remote, all_branches=False, all_tags=False,
 
     verbose: bool
         Displays detailed tracing information.
-
-    git_commit: bool
-        Wether to commit to git or not.
 
     Returns
     -------
@@ -318,47 +297,64 @@ def pull(ctx, targets, remote, all_branches=False, all_tags=False,
     """
     if phelp:
         return get_help('pull')
+
     args = ['dvc', 'pull']
     if quiet:
         args += ['-q']
+
     if verbose:
         args += ['-v']
-    args += ['-r', remote]
+
+    args += ['-r', remote_storage]
     if jobs is not None:
         args += ['-j', jobs]
+
     if all_branches and all_tags:
         args += ['-aT']
     elif all_branches:
         args += ['-a']
     elif all_tags:
         args += ['-T']
+
     if with_deps:
         args += ['-d']
+
     if recursive:
         args += ['-R']
+
     if force:
         args += ['-f']
+
     args += targets
-    return git_run_command(args, ctx["project_dir"], git_commit)
+    return run_command(args, exec_path)
 
 
-def push(ctx, targets, remote, all_branches=False, all_tags=False,
-         with_deps=False, recursive=False, jobs=None, phelp=False,
-         quiet=True, verbose=False, git_commit=True):
+def push(
+        exec_path,
+        targets,
+        remote_storage,
+        all_branches=False,
+        all_tags=False,
+        with_deps=False,
+        recursive=False,
+        jobs=None,
+        phelp=False,
+        quiet=False,
+        verbose=False):
     """Wrap dvc push command.
 
     Uploads files or directories tracked by DVC to remote storage.
 
     Parameters
     ----------
-    ctx: dict
-        Context for dvc and git.
+    exec_path: str
+        Path from where to execute command.
 
     targets: list
         Limit command scope to these DVC-files. Using 'recursive', directories
         to search DVC-files in can also be given.
 
-    remote: str
+    remote_storage: str
         Name of the remote storage to push to (see dvc remote list). The
         argument REMOTE is a remote name defined using dvc remote.
 
@@ -387,9 +383,9 @@ def push(ctx, targets, remote, all_branches=False, all_tags=False,
 
     jobs: int
         Number of threads to run simultaneously to handle the uploading of
-        files from the remote. The default value is 4 * cpu_count(). For SSH
-        remotes, the default is just 4. Using more jobs may improve the total
-        upload speed if a combination of small and large files are being
+        files from the remote storage. The default value is 4 * cpu_count().
+        For SSH remotes, the default is just 4. Using more jobs may improve the
+        total upload speed if a combination of small and large files are being
         fetched.
 
     phelp: bool
@@ -401,9 +397,6 @@ def push(ctx, targets, remote, all_branches=False, all_tags=False,
 
     verbose: bool
         Displays detailed tracing information.
-
-    git_commit: bool
-        Wether to commit to git or not.
 
     Returns
     -------
@@ -425,7 +418,7 @@ def push(ctx, targets, remote, all_branches=False, all_tags=False,
         args += ['-q']
     if verbose:
         args += ['-v']
-    args += ['-r', remote]
+    args += ['-r', remote_storage]
     if jobs is not None:
         args += ['-j', jobs]
     if all_branches and all_tags:
@@ -439,11 +432,18 @@ def push(ctx, targets, remote, all_branches=False, all_tags=False,
     if recursive:
         args += ['-R']
     args += targets
-    return git_run_command(args, ctx["project_dir"], git_commit)
+    return run_command(args, exec_path)
 
 
-def add(ctx, targets, file=None, phelp=False, quiet=True, verbose=False,
-        recursive=False, no_commit=False, git_commit=True):
+def add(
+        exec_path,
+        targets,
+        file=None,
+        phelp=False,
+        quiet=False,
+        verbose=False,
+        recursive=False,
+        no_commit=False):
     """Wrap dvc add command.
 
     Track data files or directories with DVC, by creating a corresponding
@@ -451,8 +451,8 @@ def add(ctx, targets, file=None, phelp=False, quiet=True, verbose=False,
 
     Parameters
     ----------
-    ctx: dict
-        Context for dvc and git.
+    exec_path: str
+        Path from where to execute command.
 
     targets: list
         Input files/directories to add.
@@ -487,9 +487,6 @@ def add(ctx, targets, file=None, phelp=False, quiet=True, verbose=False,
         analogous to using git add before git commit. Use dvc commit when ready
         to commit the results to cache.
 
-    git_commit: bool
-        Wether to commit to git or not.
-
     Returns
     -------
     command: str
@@ -517,14 +514,19 @@ def add(ctx, targets, file=None, phelp=False, quiet=True, verbose=False,
     if file is not None:
         args += ['-f', file]
     args += targets
-    return git_run_command(args, ctx["project_dir"], git_commit)
+    return run_command(args, exec_path)
 
 
-def run(ctx, command, wdir, deps=[], outs=[], outs_no_cache=[], metrics=[],
-        metrics_no_cache=[], file=None, no_exec=False,
+def run(  # noqa: C901
+        exec_path,
+        command,
+        wdir,
+        deps=None,
+        outs=None,
+        outs_no_cache=None,
+        metrics=None, metrics_no_cache=None, file=None, no_exec=False,
         overwrite_dvcfile=False, ignore_build_cache=False, no_commit=False,
-        always_changed=False, phelp=False, quiet=False, verbose=False,
-        git_commit=True):
+        always_changed=False, phelp=False, quiet=False, verbose=False):
     """Wrap dvc run command.
 
     Generate a stage file (DVC-file) from a given command and execute the
@@ -532,8 +534,8 @@ def run(ctx, command, wdir, deps=[], outs=[], outs_no_cache=[], metrics=[],
 
     Parameters
     ----------
-    ctx: dict
-        Context for dvc and git.
+    exec_path: str
+        Path from where to execute command.
 
     deps: list
         Specify a files or a directories the stage depends on. Multiple
@@ -619,9 +621,6 @@ def run(ctx, command, wdir, deps=[], outs=[], outs_no_cache=[], metrics=[],
     verbose: bool
         Displays detailed tracing information.
 
-    git_commit: bool
-        Wether to commit to git or not.
-
     Returns
     -------
     command: str
@@ -638,19 +637,19 @@ def run(ctx, command, wdir, deps=[], outs=[], outs_no_cache=[], metrics=[],
     if phelp:
         return get_help('add')
     args = ['dvc', 'run', '-w', wdir]
-    if len(deps) > 0:
-        for d in deps:
-            args += ['-d', d]
-    if len(outs) > 0:
-        for o in outs:
-            args += ['-o', o]
-    if len(outs_no_cache) > 0:
-        for onc in outs_no_cache:
-            args += ['-O', onc]
-    if len(metrics) > 0:
-        for m in metrics:
-            args += ['-m', m]
-    if len(metrics_no_cache) > 0:
+    if deps:
+        for dependency in deps:
+            args += ['-d', dependency]
+    if outs:
+        for out in outs:
+            args += ['-o', out]
+    if outs_no_cache:
+        for out in outs_no_cache:
+            args += ['-O', out]
+    if metrics:
+        for metric in metrics:
+            args += ['-m', metric]
+    if metrics_no_cache:
         for mnc in metrics_no_cache:
             args += ['-M', mnc]
     if file is not None:
@@ -669,18 +668,24 @@ def run(ctx, command, wdir, deps=[], outs=[], outs_no_cache=[], metrics=[],
         args += ['-q']
     if verbose:
         args += ['-v']
-    return git_run_command(args, ctx["project_dir"], git_commit)
+    args += [command]
+    return run_command(args, exec_path)
 
 
-def pipeline(ctx, command='show', phelp=False, quiet=False, verbose=False):
+def pipeline(
+        exec_path,
+        command='show',
+        phelp=False,
+        quiet=False,
+        verbose=False):
     """Wrap dvc pipeline command.
 
     A set of commands to manage pipelines: show and list.
 
     Parameters
     ----------
-    ctx: dict
-        Context for dvc and git.
+    exec_path: str
+        Path from where to execute command.
 
     command: str
         Determines the behaviour of this method according to the following
@@ -713,6 +718,7 @@ def pipeline(ctx, command='show', phelp=False, quiet=False, verbose=False):
     """
     if phelp:
         return get_help('pipeline')
+
     if command in ['show', 'list']:
         args = ['dvc', 'pipeline']
         if quiet:
@@ -720,6 +726,7 @@ def pipeline(ctx, command='show', phelp=False, quiet=False, verbose=False):
         if verbose:
             args += ['-v']
         args += [command]
-        return run_command(args, ctx["project_dir"])
+        return run_command(args, exec_path)
+
     raise DvcExecutionError('Command ', command, ' is not a valid command for dvc \
         pipeline. Options are: "show | list"')

@@ -5,7 +5,7 @@ This module defines the basic Dataset class.
 """
 from abc import ABC
 from abc import abstractmethod
-from axon.commands.dvc import run as dvc_run, add as dvc_add
+from axon.commands.dvc import add as dvc_add
 
 
 class TrackedStorage:
@@ -14,6 +14,7 @@ class TrackedStorage:
     Defined as a main data output together with parameters to regenerate it
     tracking the process with dvc.
     """
+
     data = None
     script = None
     wdir = None
@@ -21,25 +22,36 @@ class TrackedStorage:
     outs = None
     outs_no_cache = None
 
-    def __init__(self, data, script=None, wdir=None, deps=[], outs=[],
-                 outs_no_cache=[]):
+    def __init__(self, data, script=None, wdir=None, deps=None, outs=None,
+                 outs_no_cache=None):
         if self.data is None:
             raise Exception("'data' can not be undefined.")
+
         self.data = data
-        if script is not None:
-            if data not in outs:
-                raise Exception("'data' must be one of the outputs if 'script' \
-                is defined.")
-            if wdir is None:
-                raise Exception("'wdir' can not be None if 'script' is \
-                defined.")
-            self.script = script
-            self.wdir = wdir
+
+        if script is None:
+            return
+
+        if self.data not in outs:
+            raise Exception("'data' must be one of the outputs if 'script' \
+            is defined.")
+        if wdir is None:
+            raise Exception("'wdir' can not be None if 'script' is \
+            defined.")
+
+        self.script = script
+        self.wdir = wdir
+
+        if deps is not None:
             self.deps = deps
+
+        if outs is not None:
             self.outs = outs
+
+        if outs_no_cache is not None:
             self.outs_no_cache = outs_no_cache
 
-    def build(self, ctx):
+    def build(self, exec_path):
         """Build storage.
 
         Parameters
@@ -47,15 +59,15 @@ class TrackedStorage:
         ctx: dict
             Context for dvc and git.
         """
-        if self.script is not None:
-            command, result = dvc_run(ctx, self.script, self.wdir, self.deps,
-                                      self.outs, self.outs_no_cache)
+        if self.process is not None:
+            command, result = self.process.run_with_dvc(exec_path)
             print("Building storage using command: ")
             print(command)
             print("Finished! Command output: ")
             print(result)
         print("Adding data files to dvc tracking...")
-        command, result = dvc_add(ctx, targets=[self.data], recursive=True)
+        command, result = dvc_add(exec_path, targets=[self.data],
+                                  recursive=True)
         print("Done! Successfully added dvc tracking of " + self.data)
 
 
@@ -68,8 +80,9 @@ class Dataset(ABC):
 
     storages = None
 
-    def __init__(self, storages):
-        self.storages = storages
+    def __init__(self, storages=None):
+        if storages is not None:
+            self.storages = storages
 
     @abstractmethod
     def iter(self):
@@ -94,7 +107,7 @@ class Dataset(ABC):
             Match as only element or empty list.
         """
 
-    def build(self, ctx):
+    def build(self, exec_path):
         """Build storages.
 
         Parameters
@@ -103,4 +116,32 @@ class Dataset(ABC):
             Context for dvc and git.
         """
         for storage in self.storages:
-            storage.build(ctx)
+            storage.build(exec_path)
+
+
+### bat_detector/scripts/generate_metadata.py
+
+class GenerateMetadata(Process):
+    outs = [
+        'metadata.sqlite',
+        'metadata_process.log',
+        'samples.npy'
+    ]
+    wdir = 'data/metadata/'
+
+    def run(self):
+        return 1
+
+### Consola
+
+### bat_detector/datasets/bat_dataset.py
+
+class BatDataset(Dataset):
+    storages = {
+        'metadata': TrackedStorage(
+            data='metadata.sqlite',
+            script='bat_detector.scripts.generate_metadata')
+    }
+
+    def get(self):
+        metadata_path = self.get_storage_path('metadata')
