@@ -3,14 +3,14 @@
 import tempfile
 from uuid import uuid4
 import os
-from axon.commands import git
-from axon.commands.projects import add_basic_files
+from axon.commands import git_utils
+from axon.commands.projects import create_basic_files
 
 
 def test_create_repository():
     """Check if can create a working repository."""
     with tempfile.TemporaryDirectory() as tmp_dir:
-        repo = git.create_repository(tmp_dir)
+        repo = git_utils.create_repository(tmp_dir)
 
         assert '.git' in os.listdir(tmp_dir)
         assert not repo.is_dirty()
@@ -19,7 +19,7 @@ def test_create_repository():
 def test_add_all_files():
     """Check if all files are beign added to the repository."""
     with tempfile.TemporaryDirectory() as tmp_dir:
-        repo = git.create_repository(tmp_dir)
+        repo = git_utils.create_repository(tmp_dir)
 
         random_files = [
             os.path.join(tmp_dir, str(uuid4())[:10] + '.txt')
@@ -35,7 +35,7 @@ def test_add_all_files():
         ]
 
         assert set(repo.untracked_files) == set(basenames)
-        git.add_all_files_to_repository(repo)
+        git_utils.add_all_files_to_repository(repo)
         assert not repo.untracked_files
 
 
@@ -57,16 +57,16 @@ if __name__ == '__main__':
 def test_install_precommit_hooks():
     """Check if the hooks were properly installed."""
     with tempfile.TemporaryDirectory() as tmp_dir:
-        repo = git.create_repository(tmp_dir)
+        repo = git_utils.create_repository(tmp_dir)
 
         assert not repo.untracked_files
-        add_basic_files(tmp_dir)
+        create_basic_files(tmp_dir)
         assert len(repo.untracked_files) == 9
 
-        git.add_all_files_to_repository(repo)
+        git_utils.add_all_files_to_repository(repo)
         assert not repo.untracked_files
 
-        git.install_precommit_hooks(repo)
+        git_utils.install_precommit_hooks(repo)
 
         git_dir = os.path.join(tmp_dir, '.git')
         pre_commit_hooks = os.path.join(
@@ -82,5 +82,5 @@ def test_install_precommit_hooks():
             tmpfile.write(SAMPLE_PYTHON_FILE)
 
         assert repo.untracked_files == ['sample.py']
-        git.git_add_and_commit(repo, ['sample.py'], "testing hooks")
+        git_utils.git_add_and_commit(repo, ['sample.py'], "testing hooks")
         assert not repo.untracked_files

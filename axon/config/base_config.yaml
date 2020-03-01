@@ -12,4 +12,4 @@ directory_structure:
 config_files:
 
 # Name of the configuration file within an axon project
-config_file_name: .axon.config.yaml
+config_filename: axon.config.yaml

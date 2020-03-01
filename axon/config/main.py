@@ -5,6 +5,8 @@ import logging
 import collections.abc
 import yaml
 
+from axon.commands.projects import get_project_path
+
 
 BASE_CONFIG_NAME = 'base_config.yaml'
 BASE_CONFIG_PATH = os.path.join(os.path.dirname(__file__), BASE_CONFIG_NAME)
@@ -27,15 +29,7 @@ def get_config():
 
     for config_file in user_config_files:
         if os.path.exists(config_file):
-            try:
-                with open(config_file, 'r') as yamlfile:
-                    user_config = yaml.full_load(yamlfile)
-
-                config = update(config, user_config)
-            except yaml.YAMLError:
-                logging.warning(
-                    'Could not read user axon config file: %s',
-                    config_file)
+            load_and_update_configurations(config_file, config)
         else:
             logging.warning(
                 'User axon config file does not exist: %s',
@@ -43,24 +37,32 @@ def get_config():
 
     # Look for a configuration file within the current directory or parent
     # directories and read configuration.
-    project_config_file_name = config.get('config_file_name', None)
-    project_directory = find_project(project_config_file_name)
+    try:
+        project_config_file_name = config.get('config_filename', None)
+        project_directory = get_project_path(os.getcwd(), config)
 
-    if project_directory is not None:
         project_config_file = os.path.join(
             project_directory,
             project_config_file_name)
-        try:
-            with open(project_config_file, 'r') as yamlfile:
-                project_config = yaml.full_load(yamlfile)
+        load_and_update_configurations(project_config_file, config)
 
-            config = update(config, project_config)
-        except yaml.YAMLError:
-            logging.warning(
-                'Could not read user axon project config file: %s',
-                project_config_file)
+    except FileNotFoundError:
+        pass
 
     return config
+
+
+def load_and_update_configurations(config_file, configurations):
+    """Read configuration file and update any new settings."""
+    try:
+        with open(config_file, 'r') as yamlfile:
+            new_configs = yaml.full_load(yamlfile)
+
+        configurations = update(configurations, new_configs)
+    except yaml.YAMLError:
+        logging.warning(
+            'Could not read user axon project config file: %s',
+            config_file)
 
 
 def update(settings, new_settings):
@@ -71,39 +73,3 @@ def update(settings, new_settings):
         else:
             settings[key] = value
     return settings
-
-
-def find_project(config_filename):
-    """Get project directory.
-
-    This function will look recursively for a configuration file
-    with the given name, repeating the search on the parent directory
-    if not found.
-
-    Parameters
-    ----------
-    config_filename: str
-        The name of the configuration file to look for. A directory will be
-        declared a project directory if a configuration file with this name
-        is found in it.
-
-    Returns
-    -------
-    str
-        The path of the project directory. If none is found it will return
-        None.
-    """
-    current_directory = os.path.abspath(os.getcwd())
-
-    while True:
-        potential_config_file = os.path.join(
-            current_directory,
-            config_filename)
-        if os.path.exists(potential_config_file):
-            return current_directory
-
-        parent_directory = os.path.dirname(current_directory)
-        if parent_directory == current_directory:
-            return None
-
-        current_directory = parent_directory
