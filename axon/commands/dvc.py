@@ -524,9 +524,17 @@ def run(  # noqa: C901
         deps=None,
         outs=None,
         outs_no_cache=None,
-        metrics=None, metrics_no_cache=None, file=None, no_exec=False,
-        overwrite_dvcfile=False, ignore_build_cache=False, no_commit=False,
-        always_changed=False, phelp=False, quiet=False, verbose=False):
+        metrics=None,
+        metrics_no_cache=None,
+        file=None,
+        no_exec=False,
+        overwrite_dvcfile=False,
+        ignore_build_cache=False,
+        no_commit=False,
+        always_changed=False,
+        phelp=False,
+        quiet=False,
+        verbose=False):
     """Wrap dvc run command.
 
     Generate a stage file (DVC-file) from a given command and execute the
@@ -669,6 +677,171 @@ def run(  # noqa: C901
     if verbose:
         args += ['-v']
     args += [command]
+    return run_command(args, exec_path)
+
+
+def repro(  # noqa: C901
+        exec_path,
+        targets,
+        force=False,
+        cwd=None,
+        single_item=False,
+        recursive=True,
+        no_commit=False,
+        metrics=True,
+        dry=False,
+        interactive=False,
+        run_pipeline=True,
+        run_all_pipelines=False,
+        ignore_build_cache=False,
+        downstream=False,
+        phelp=False,
+        verbose=False,
+        quiet=False):
+    """Wrap dvc repro command.
+
+    Generate a stage file (DVC-file) from a given command and execute the
+    command.
+
+    Parameters
+    ----------
+    exec_path: str
+        Path from where to execute command.
+
+    targets:list
+        DVC-file to reproduce. 'Dvcfile' by default.
+
+    force: bool
+        Reproduce a pipeline, regenerating its results, even if no changes were
+        found. This executes all of the stages by default, but it can be
+        limited with the targets argument, or the 'single_item', 'pipeline' and
+        'cwd' arguments.
+
+    single_item: bool
+        Reproduce only a single stage by turning off the recursive search for
+        changed dependencies. Multiple stages are executed (non-recursively)
+        if multiple stage files are given as targets.
+
+    cwd: str
+        Directory within the project to reproduce from. If no targets are
+        given, it attempts to use Dvcfile in the specified directory. Instead
+        of using 'cwd', one can alternately specify a target in a subdirectory
+        as path/to/target.dvc. This option can be useful for example with
+        subdirectories containing a separate pipeline that can either be
+        reproduced as part of the pipeline in the parent directory, or as an
+        independent unit.
+
+    recursive: bool
+        Determines the stages to reproduce by searching each target directory
+        and its subdirectories for DVC-files to inspect. If there are no
+        directories among the targets, this option is ignored.
+
+    no_commit: bool
+        Do not save outputs to cache. (See dvc run.) Useful when running
+        different experiments and you don't want to fill up the cache with
+        temporary files. Use dvc commit when ready to commit the results to
+        cache.
+
+    metrics: bool
+        Show metrics after reproduction. The target pipelines must have at
+        least one metric file defined either with the dvc metrics command, or
+        by the 'metrics' or 'metrics_no_cache' arguments on the run
+        command.
+
+    dry: bool
+        Only print the commands that would be executed without actually
+        executing the commands.
+
+    interactive: bool
+        Ask for confirmation before reproducing each stage. The stage is only
+        executed if the user types "y"
+
+    run_pipeline: bool
+        Reproduce the entire pipelines that the stage file targets belong to.
+        Use pipeline command='show' and for file <target>.dvc to show the
+        parent pipeline of a target stage.
+
+    run_all_pipelines: bool
+        Reproduce all pipelines, for all the stage files present in DVC
+        repository.
+
+    ignore_build_cache: bool
+        In cases like ... -> A (changed) -> B -> C it will reproduce A first
+        and then B, even if B was previously executed with the same inputs from
+        A (cached). To be precise, it reproduces all descendants of a changed
+        stage or the stages following the changed stage, even if their direct
+        dependencies did not change.
+        It can be useful when we have a common dependency among all stages, and
+        want to specify it only once (for stage A here). For example, if we
+        know that all stages (A and below) depend on requirements.txt, we can
+        specify it in A, and omit it in B and C.
+        Like with the same option on dvc run, this is a way to force-execute
+        stages without changes. This can also be useful for pipelines
+        containing stages that produce non-deterministic (semi-random) outputs,
+        where outputs can vary on each execution, meaning the cache cannot be
+        trusted for such stages.
+
+    downstream: bool
+        Only execute the stages after the given targets in their corresponding
+        pipelines, including the target stages themselves.
+
+    phelp: bool
+        Returns original dvc usage/help message.
+
+    quiet: bool
+        Do not write anything to standard output. Exit with 0 if no problems
+        arise, otherwise 1.
+
+    verbose: bool
+        Displays detailed tracing information.
+
+    Returns
+    -------
+    command: str
+        The executed command.
+
+    command_output: str
+        The stdout resulting from running the process in shell.
+
+    Raises
+    ------
+    DvcExecutionError
+        If the command fails to execute and prints original stderr output.
+    """
+    if phelp:
+        return get_help('repro')
+
+    args = ['dvc', 'repro']
+    if force:
+        args += ['-f']
+    if cwd is not None:
+        args += ['-c', cwd]
+    if single_item:
+        args += ['-s']
+    if recursive:
+        args += ['-R']
+    if no_commit:
+        args += ['--no-commit']
+    if metrics:
+        args += ['-m']
+    if dry:
+        args += ['-d']
+    if interactive:
+        args += ['-i']
+    if run_pipeline:
+        args += ['-p']
+    if run_all_pipelines:
+        args += ['-P']
+    if ignore_build_cache:
+        args += ['--ignore-build-cache']
+    if downstream:
+        args += ['--downstream']
+    if quiet:
+        args += ['-q']
+    if verbose:
+        args += ['-v']
+    args += targets
+
     return run_command(args, exec_path)
 
 

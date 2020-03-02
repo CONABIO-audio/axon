@@ -41,61 +41,20 @@ class Process(ABC):
     """
 
     name = None
-    input_dtype = None
-    output_dtype = None
+    wdir = None
 
-    def __init__(self, input_dtype=None, output_dtype=None):
-        self.logger = logging.getLogger(self.name)
+    deps = []
+    outs = []
+    outs_no_cache = []
+    metrics_no_cache = []
+    metrics = []
 
-        if input_dtype is None:
-            input_dtype = self.input_dtype
-        self._input_dtype = input_dtype
+    def __init__(self, *args, **kwargs):
+        self.log = logging.getLogger(self.name)
+        self.config_logging()
 
-        if output_dtype is None:
-            output_dtype = self.output_dtype
-        self._output_dtype = output_dtype
-
-    def get_input_dtype(self):
-        """Get DataType for the input of this process.
-
-        This method usually returns the input data type stated
-        at the class declaration, or the user provided input data type at
-        initialization.
-
-        Rewrite if a more dynamic input data type setting is needed.
-        """
-        return self._input_dtype
-
-    def get_output_dtype(self):
-        """Get DataType for the output of this process.
-
-        This method usually returns the output data type stated
-        at the class declaration, or the user provided output data type at
-        initialization.
-
-        Rewrite if a more dynamic output data type setting is needed.
-        """
-        return self._output_dtype
-
-    def info(self, *args, **kwargs):
-        """Log message with info level."""
-        self.logger.log(*args, **kwargs)
-
-    def warning(self, *args, **kwargs):
-        """Log message with warning level."""
-        self.logger.warning(*args, **kwargs)
-
-    def error(self, *args, **kwargs):
-        """Log message with error level."""
-        self.logger.error(*args, **kwargs)
-
-    def critical(self, *args, **kwargs):
-        """Log message with critical level."""
-        self.logger.critical(*args, **kwargs)
-
-    def run_with_dvc(self, exec_path, **kwargs):
-        return dvc_run(exec_path, command=self.script, outs=self.outs,
-                       deps=self.deps, **kwargs)
+    def config_logging(self):
+        """Configure the process logger."""
 
     @abstractmethod
     def run(self, *args, **kwargs):
