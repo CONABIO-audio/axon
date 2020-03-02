@@ -5,7 +5,7 @@ import os
 import click
 from axon.commands.projects import create_project
 from axon.commands.projects import get_project
-# from axon.commands.run import run
+from axon.commands.run import run
 # from axon.commands.train import train
 # from axon.commands.evaluate import evaluate
 from axon.config.main import get_config
@@ -17,7 +17,7 @@ def check_if_in_project(ctx):
 
     Exit the current process if not.
     """
-    if 'project_dir' not in ctx.obj:
+    if 'project' not in ctx.obj:
         click.secho('You are not within an axon project directory', fg='red')
         sys.exit()
 
@@ -31,6 +31,7 @@ def main(ctx):
 
     try:
         ctx.obj['project'] = get_project(os.getcwd(), ctx.obj['config'])
+        sys.path.append(ctx.obj['project'].path)
     except FileNotFoundError:
         pass
 
@@ -45,11 +46,13 @@ def create_project_command(ctx, name, path):
 
 
 @main.command(name='run')
+@click.argument('name')
 @click.pass_context
-def run(ctx):
+def run_command(ctx, name):
     """Run a with dvc."""
     check_if_in_project(ctx)
     click.secho('running!', fg='green')
+    run(ctx.obj['project'], name)
 
 
 @main.command(name='train')

@@ -241,12 +241,12 @@ def test_project_get_process():
         ]
 
         for name in should_find_w_no_name:
-            process = project.get_process(name)
+            process, _ = project.get_process(name)
             assert issubclass(process, Process)
 
             name_erroneus_class = name + ':AlternativeProcess'
             with pytest.raises(ValueError):
-                process = project.get_process(name_erroneus_class)
+                project.get_process(name_erroneus_class)
 
         should_find_w_name = [
             'test2:AlternativeProcess',
@@ -258,13 +258,13 @@ def test_project_get_process():
         ]
 
         for name in should_find_w_name:
-            process = project.get_process(name)
+            process, _ = project.get_process(name)
             assert issubclass(process, Process)
             assert process.__name__ == 'AlternativeProcess'
 
             name_no_class = name.split(':')[0]
             with pytest.raises(ValueError):
-                process = project.get_process(name_no_class)
+                project.get_process(name_no_class)
 
         should_not_find = [
             'empty',
@@ -277,6 +277,6 @@ def test_project_get_process():
 
         for name in should_not_find:
             with pytest.raises(ValueError):
-                process = project.get_process(name_no_class)
+                project.get_process(name_no_class)
 
         sys.path.pop(-1)

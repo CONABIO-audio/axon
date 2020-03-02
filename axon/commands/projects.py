@@ -219,6 +219,13 @@ class Project:
             <name>:<Process Subclass Name>
 
         to denote the desired process class.
+
+        Returns
+        -------
+        Process
+            The process class found at the indicated module
+        str
+            The relative path of the module where the process class was found
         """  # noqa: E501
         classname = None
         if ':' in name:
@@ -229,12 +236,14 @@ class Project:
             self.pkg_path,
             name,
             subdirs=[scripts_dir])
+        rel_path = os.path.join(self.path, module_path)
 
         # Remove python extension and change to module syntax
         module = module_path[:-3]
         module = module.replace(os.sep, '.')
         module = '{}.{}'.format(self.name, module)
 
+        print('Importing module %s' % module)
         module = importlib.import_module(module)
         processes = {
             name: process for
@@ -250,7 +259,7 @@ class Project:
                 message = message.format(classname, module_path)
                 raise ValueError(message)
 
-            return processes[classname]
+            return processes[classname], rel_path
 
         if len(processes) == 0:
             message = 'The process class {} was not found in the file {}'
@@ -264,7 +273,7 @@ class Project:
             message = message.format(classname, module_path)
             raise ValueError(message)
 
-        return processes.popitem()[1]
+        return processes.popitem()[1], rel_path
 
 
 def create_project(name: str, path: str, configuration: dict) -> Project:
