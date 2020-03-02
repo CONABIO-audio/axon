@@ -1,14 +1,7 @@
 # -*- coding: utf-8 -*-
 """DVC commands."""
 #  pylint: disable=too-many-branches,too-many-arguments,too-many-locals
-from subprocess import Popen
-
-
-class DvcExecutionError(Exception):
-    """Dvc execution error.
-
-    Simple class that specifies an execution error from dvc.
-    """
+import subprocess
 
 
 def run_command(args, exec_path=None):
@@ -29,21 +22,14 @@ def run_command(args, exec_path=None):
     command: str
         The executed command.
 
-    command_output: str
-        The stdout resulting from running the process in shell.
 
     Raises
     ------
-    DvcExecutionError
+    subprocess.CalledProcessError
         If the command fails to execute and prints original stderr output.
     """
-    proc = Popen(args, cwd=exec_path)
-    stdout, stderr = proc.communicate()
-
-    if stderr:
-        raise DvcExecutionError(stderr)
-
-    return " ".join(args), stdout
+    subprocess.run(args, cwd=exec_path, check=True)
+    return " ".join(args)
 
 
 def get_help(dvc_command):
@@ -66,7 +52,7 @@ def get_help(dvc_command):
 
     Raises
     ------
-    DvcExecutionError
+    subprocess.CalledProcessError
         If the command fails to execute.
     """
     args = ['dvc', dvc_command]
@@ -117,12 +103,9 @@ def init(
     command: str
         The executed command.
 
-    command_output: str
-        The stdout resulting from running the process in shell.
-
     Raises
     ------
-    DvcExecutionError
+    subprocess.CalledProcessError
         If the command fails to execute and prints original stderr output.
     """
     if phelp:
@@ -179,12 +162,9 @@ def remote(exec_path, command, phelp=False, quiet=False, verbose=False):
     command: str
         The executed command.
 
-    command_output: str
-        The stdout resulting from running the process in shell.
-
     Raises
     ------
-    DvcExecutionError
+    subprocess.CalledProcessError
         If the command fails to execute and prints original stderr output.
     """
     if phelp:
@@ -202,7 +182,7 @@ def remote(exec_path, command, phelp=False, quiet=False, verbose=False):
         args += [command]
         return run_command(args, exec_path)
 
-    raise DvcExecutionError('Command ', command, ' is not a valid command for dvc \
+    raise subprocess.CalledProcessError('Command ', command, ' is not a valid command for dvc \
         remote. Options are: "add | default | remove | modify | list"')
 
 
@@ -213,7 +193,7 @@ def pull(  # noqa: C901
         all_branches=False,
         all_tags=False,
         with_deps=False,
-        recursive=False,
+        recursive=True,
         force=False,
         jobs=None,
         phelp=False,
@@ -289,12 +269,9 @@ def pull(  # noqa: C901
     command: str
         The executed command.
 
-    command_output: str
-        The stdout resulting from running the process in shell.
-
     Raises
     ------
-    DvcExecutionError
+    subprocess.CalledProcessError
         If the command fails to execute and prints original stderr output.
     """
     if phelp:
@@ -338,7 +315,7 @@ def push(
         all_branches=False,
         all_tags=False,
         with_deps=False,
-        recursive=False,
+        recursive=True,
         jobs=None,
         phelp=False,
         quiet=False,
@@ -405,12 +382,9 @@ def push(
     command: str
         The executed command.
 
-    command_output: str
-        The stdout resulting from running the process in shell.
-
     Raises
     ------
-    DvcExecutionError
+    subprocess.CalledProcessError
         If the command fails to execute and prints original stderr output.
     """
     if phelp:
@@ -452,7 +426,7 @@ def add(
         phelp=False,
         quiet=False,
         verbose=False,
-        recursive=False,
+        recursive=True,
         no_commit=False):
     """Wrap dvc add command.
 
@@ -502,12 +476,9 @@ def add(
     command: str
         The executed command.
 
-    command_output: str
-        The stdout resulting from running the process in shell.
-
     Raises
     ------
-    DvcExecutionError
+    subprocess.CalledProcessError
         If the command fails to execute and prints original stderr output.
     """
     if phelp:
@@ -650,12 +621,9 @@ def run(  # noqa: C901
     command: str
         The executed command.
 
-    command_output: str
-        The stdout resulting from running the process in shell.
-
     Raises
     ------
-    DvcExecutionError
+    subprocess.CalledProcessError
         If the command fails to execute and prints original stderr output.
     """
     if phelp:
@@ -831,12 +799,9 @@ def repro(  # noqa: C901
     command: str
         The executed command.
 
-    command_output: str
-        The stdout resulting from running the process in shell.
-
     Raises
     ------
-    DvcExecutionError
+    subprocess.CalledProcessError
         If the command fails to execute and prints original stderr output.
     """
     if phelp:
@@ -912,12 +877,9 @@ def pipeline(
     command: str
         The executed command.
 
-    command_output: str
-        The stdout resulting from running the process in shell.
-
     Raises
     ------
-    DvcExecutionError
+    subprocess.CalledProcessError
         If the command fails to execute and prints original stderr output.
     """
     if phelp:
@@ -935,5 +897,5 @@ def pipeline(
         args += [command]
         return run_command(args, exec_path)
 
-    raise DvcExecutionError('Command ', command, ' is not a valid command for dvc \
+    raise subprocess.CalledProcessError('Command ', command, ' is not a valid command for dvc \
         pipeline. Options are: "show | list"')

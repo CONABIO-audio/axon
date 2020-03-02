@@ -11,6 +11,8 @@ dependencies and data outputs, and use them to run:
 dvc run script -d dependencies -o outputs
 """
 import os
+import sys
+import subprocess
 import argparse
 import click
 
@@ -60,16 +62,23 @@ def run(project, script_name):
         for dependency in process.metrics_no_cache]
 
     click.secho('[1] Starting DVC run', fg='green')
-    dvc_run(
-        exec_path=project.path,
-        command=command,
-        wdir=process.wdir,
-        deps=deps,
-        outs=outs,
-        outs_no_cache=outs_no_cache,
-        metrics=metrics,
-        metrics_no_cache=metrics_no_cache,
-        file=file)
+
+    try:
+        dvc_run(
+            exec_path=project.path,
+            command=command,
+            wdir=process.wdir,
+            deps=deps,
+            outs=outs,
+            outs_no_cache=outs_no_cache,
+            metrics=metrics,
+            metrics_no_cache=metrics_no_cache,
+            file=file)
+    except subprocess.CalledProcessError:
+        click.secho(
+            f'[!!] DVC failed to execute the command {command}',
+            fg='red')
+        sys.exit()
 
     click.secho('[2] Adding files to git', fg='green')
     git_files = (

@@ -27,7 +27,7 @@ BASIC_FILES = [
     'setup.py',
     'axon.config.yaml',
     '.gitignore',
-    'MLProject',
+    'MLproject',
     'conda.yaml',
     'requirements.txt',
 ]
