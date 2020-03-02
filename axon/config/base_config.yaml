@@ -6,10 +6,11 @@ directory_structure:
   - preprocessors
   - evaluators
   - scripts
+  - data
 
 # Single or list of configuration files from which to read and replace settings. Will
 # be read and replaced in order when is a list.
 config_files:
 
 # Name of the configuration file within an axon project
-config_file_name: .axon.config.yaml
+config_filename: axon.config.yaml

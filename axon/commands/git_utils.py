@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Git commands."""
 import os
-import subprocess
 from typing import Iterable
 from git import Repo
 
@@ -61,11 +60,3 @@ def git_add_and_commit(repo: Repo, files: Iterable[str], commit_message: str):
     """Add files to repository and commit."""
     repo.index.add(files)
     repo.index.commit(commit_message)
-
-
-def install_precommit_hooks(repo: Repo):
-    """Add pre-commit hooks to the git repository."""
-    subprocess.run(
-        ["pre-commit", "install"],
-        cwd=repo.working_tree_dir,
-        check=True)

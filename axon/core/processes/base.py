@@ -41,20 +41,19 @@ class Process(ABC):
     """
 
     name = None
-    wdir = None
-
     deps = []
     outs = []
-    outs_no_cache = []
-    metrics_no_cache = []
     metrics = []
+    metrics_no_cache = []
+    outs_no_cache = []
+    wdir = '.'
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, config=None):
         self.log = logging.getLogger(self.name)
-        self.config_logging()
 
-    def config_logging(self):
-        """Configure the process logger."""
+        if config is None:
+            config = {}
+        self.config = config
 
     @abstractmethod
     def run(self, *args, **kwargs):
