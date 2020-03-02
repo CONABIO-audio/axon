@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """DVC commands."""
-#  pylint: disable=R0912,R0913,R0914
+#  pylint: disable=too-many-branches,too-many-arguments,too-many-locals
 from subprocess import Popen, PIPE
 
 
@@ -413,24 +413,32 @@ def push(
     """
     if phelp:
         return get_help('push')
+
     args = ['dvc', 'push']
+
     if quiet:
         args += ['-q']
+
     if verbose:
         args += ['-v']
+
     args += ['-r', remote_storage]
     if jobs is not None:
         args += ['-j', jobs]
+
     if all_branches and all_tags:
         args += ['-aT']
     elif all_branches:
         args += ['-a']
     elif all_tags:
         args += ['-T']
+
     if with_deps:
         args += ['-d']
+
     if recursive:
         args += ['-R']
+
     args += targets
     return run_command(args, exec_path)
 
@@ -503,16 +511,22 @@ def add(
     if phelp:
         return get_help('add')
     args = ['dvc', 'add']
+
     if quiet:
         args += ['-q']
+
     if verbose:
         args += ['-v']
+
     if recursive:
         args += ['-R']
+
     if no_commit:
         args += ['--no-commit']
+
     if file is not None:
         args += ['-f', file]
+
     args += targets
     return run_command(args, exec_path)
 
@@ -636,38 +650,53 @@ def run(  # noqa: C901
     """
     if phelp:
         return get_help('add')
+
     args = ['dvc', 'run', '-w', wdir]
+
     if deps:
         for dependency in deps:
             args += ['-d', dependency]
+
     if outs:
         for out in outs:
             args += ['-o', out]
+
     if outs_no_cache:
         for out in outs_no_cache:
             args += ['-O', out]
+
     if metrics:
         for metric in metrics:
             args += ['-m', metric]
+
     if metrics_no_cache:
         for mnc in metrics_no_cache:
             args += ['-M', mnc]
+
     if file is not None:
         args += ['-f', 'file']
+
     if no_exec:
         args += ['--no-exec']
+
     if overwrite_dvcfile:
         args += ['--overwrite-dvcfile']
+
     if ignore_build_cache:
         args += ['--ignore-build-cache']
+
     if no_commit:
         args += ['--no-commit']
+
     if always_changed:
         args += ['--always-changed']
+
     if quiet:
         args += ['-q']
+
     if verbose:
         args += ['-v']
+
     args += [command]
     return run_command(args, exec_path)
 
@@ -721,10 +750,13 @@ def pipeline(
 
     if command in ['show', 'list']:
         args = ['dvc', 'pipeline']
+
         if quiet:
             args += ['-q']
+
         if verbose:
             args += ['-v']
+
         args += [command]
         return run_command(args, exec_path)
 

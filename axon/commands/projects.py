@@ -6,14 +6,20 @@ development takes place. The projects are structured in a specific manner
 to facilitate navigation and help organize code.
 """
 import os
+from inspect import getmembers
+from inspect import isclass
+import importlib
 from typing import Iterable
 import git
 
+from axon.core.processes import Process
 from axon.commands.git_utils import create_repository as create_git_repository
 from axon.commands.git_utils import add_all_files_to_repository
 from axon.commands.git_utils import install_precommit_hooks
 from axon.commands.git_utils import git_add_and_commit
 from axon.commands.templates import get_template
+from axon.commands.dvc import init as dvc_init
+from axon.commands.paths import find_in_directory
 
 
 BASIC_FILES = [
@@ -42,9 +48,13 @@ class Project:
     def __init__(self, path: str, configuration: dict, validate: bool = True):
         self.path = path
         self.configuration = configuration
-        self.name = (
-            os.path.basename(self.path).replace(self.project_dir_postfix, '')
-        )
+
+        if 'project_dir_postfix' in configuration:
+            self.project_dir_postfix = configuration['project_dir_postfix']
+
+        name = os.path.basename(path).replace(self.project_dir_postfix, '')
+        self.name = name
+        self.pkg_path = os.path.join(path, name)
 
         try:
             self.repo = git.Repo(self.path)
@@ -75,6 +85,12 @@ class Project:
                 self.configuration)
             commit_message = 'Base structure files added'
             git_add_and_commit(self.repo, structure_files, commit_message)
+
+        if not self.has_dvc_installed():
+            dvc_init(self.path)
+            dvc_files = os.path.join(self.path, '.dvc')
+            commit_message = 'Initialize DVC project'
+            git_add_and_commit(self.repo, [dvc_files], commit_message)
 
         if not self.has_precommit_hooks_installed():
             install_precommit_hooks(self.repo)
@@ -168,6 +184,87 @@ class Project:
             hooks = precommitfile.read()
 
         return 'pre-commit' in hooks
+
+    def has_dvc_installed(self) -> bool:
+        """Check if a dvc repository has been initialized in the project."""
+        dvc_subdirectory = os.path.join(self.path, '.dvc')
+        return os.path.exists(dvc_subdirectory)
+
+    def get_process(self, name: str) -> Process:
+        """
+        Get the process object defined in the script with the given name.
+
+        Notes
+        -----
+        The script will be retreived from the project directory. The name of
+        the script should be given in one of the following formats:
+
+        1.1.- Simple path relative to the scripts directory:
+            databases/generate_database.py -> <current_project>/<name>/scripts/databases/generate_database.py
+        1.2.- Module syntax relative to scripts directory:
+            databases.generate_database -> <current_project>/<name>/scripts/databases/generate_database.py
+        2.1.- Path relative to the project directory
+            databases/generate_database.py -> <current_project>/databases/generate_database.py
+        2.2.- Module syntax relative to the project module
+            databases.generate_database -> <current_project>/databases/generate_database.py
+        3.- Absolute path (will throw error if not in the project directory)
+
+        The order of the list indicates precedence when more than one option
+        is avaliable.
+
+        After finding the correct file, it will be dynamically imported, and
+        the first Process subclass in the file will be returned. If more than
+        one Process subclass is defined in the file, we recommend using the
+        syntax::
+            <name>:<Process Subclass Name>
+
+        to denote the desired process class.
+        """  # noqa: E501
+        classname = None
+        if ':' in name:
+            name, classname = name.split(':')
+
+        scripts_dir = self.configuration.get('scripts_dir', 'scripts')
+        module_path = find_in_directory(
+            self.pkg_path,
+            name,
+            subdirs=[scripts_dir])
+
+        # Remove python extension and change to module syntax
+        module = module_path[:-3]
+        module = module.replace(os.sep, '.')
+        module = '{}.{}'.format(self.name, module)
+
+        module = importlib.import_module(module)
+        processes = {
+            name: process for
+            (name, process) in getmembers(
+                module,
+                lambda x: issubclass(x, Process) if isclass(x) else False)
+            if process != Process
+        }
+
+        if classname:
+            if classname not in processes:
+                message = 'The process class {} was not found in the file {}'
+                message = message.format(classname, module_path)
+                raise ValueError(message)
+
+            return processes[classname]
+
+        if len(processes) == 0:
+            message = 'The process class {} was not found in the file {}'
+            message = message.format(classname, module_path)
+            raise ValueError(message)
+
+        if len(processes) > 1:
+            message = (
+                'There are multiple processes defined in the file {} but'
+                ' none was specified')
+            message = message.format(classname, module_path)
+            raise ValueError(message)
+
+        return processes.popitem()[1]
 
 
 def create_project(name: str, path: str, configuration: dict) -> Project:
