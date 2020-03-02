@@ -4,7 +4,6 @@ import tempfile
 from uuid import uuid4
 import os
 from axon.commands import git_utils
-from axon.commands.projects import create_basic_files
 
 
 def test_create_repository():
@@ -36,51 +35,4 @@ def test_add_all_files():
 
         assert set(repo.untracked_files) == set(basenames)
         git_utils.add_all_files_to_repository(repo)
-        assert not repo.untracked_files
-
-
-SAMPLE_PYTHON_FILE = '''# -*- coding: utf-8 -*-
-"""Has module docstring."""
-import os
-
-
-def main():
-    """Execute the main functionality of this module."""
-    print(os.listdir('.'))
-
-
-if __name__ == '__main__':
-    main()
-'''
-
-
-def test_install_precommit_hooks():
-    """Check if the hooks were properly installed."""
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        repo = git_utils.create_repository(tmp_dir)
-
-        assert not repo.untracked_files
-        create_basic_files(tmp_dir)
-        assert len(repo.untracked_files) == 9
-
-        git_utils.add_all_files_to_repository(repo)
-        assert not repo.untracked_files
-
-        git_utils.install_precommit_hooks(repo)
-
-        git_dir = os.path.join(tmp_dir, '.git')
-        pre_commit_hooks = os.path.join(
-            git_dir,
-            'hooks',
-            'pre-commit')
-
-        with open(pre_commit_hooks, 'r') as precommitfile:
-            hooks = precommitfile.read()
-            assert 'pre-commit' in hooks
-
-        with open(os.path.join(tmp_dir, 'sample.py'), 'w') as tmpfile:
-            tmpfile.write(SAMPLE_PYTHON_FILE)
-
-        assert repo.untracked_files == ['sample.py']
-        git_utils.git_add_and_commit(repo, ['sample.py'], "testing hooks")
         assert not repo.untracked_files

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """DVC commands."""
 #  pylint: disable=too-many-branches,too-many-arguments,too-many-locals
-from subprocess import Popen, PIPE
+from subprocess import Popen
 
 
 class DvcExecutionError(Exception):
@@ -37,10 +37,12 @@ def run_command(args, exec_path=None):
     DvcExecutionError
         If the command fails to execute and prints original stderr output.
     """
-    proc = Popen(args, stdout=PIPE, stderr=PIPE, cwd=exec_path)
+    proc = Popen(args, cwd=exec_path)
     stdout, stderr = proc.communicate()
+
     if stderr:
         raise DvcExecutionError(stderr)
+
     return " ".join(args), stdout
 
 
@@ -674,7 +676,7 @@ def run(  # noqa: C901
             args += ['-M', mnc]
 
     if file is not None:
-        args += ['-f', 'file']
+        args += ['-f', file]
 
     if no_exec:
         args += ['--no-exec']

@@ -15,7 +15,6 @@ import git
 from axon.core.processes import Process
 from axon.commands.git_utils import create_repository as create_git_repository
 from axon.commands.git_utils import add_all_files_to_repository
-from axon.commands.git_utils import install_precommit_hooks
 from axon.commands.git_utils import git_add_and_commit
 from axon.commands.templates import get_template
 from axon.commands.dvc import init as dvc_init
@@ -28,7 +27,6 @@ BASIC_FILES = [
     'setup.py',
     'axon.config.yaml',
     '.gitignore',
-    '.pre-commit-config.yaml',
     'MLProject',
     'conda.yaml',
     'requirements.txt',
@@ -91,9 +89,6 @@ class Project:
             dvc_files = os.path.join(self.path, '.dvc')
             commit_message = 'Initialize DVC project'
             git_add_and_commit(self.repo, [dvc_files], commit_message)
-
-        if not self.has_precommit_hooks_installed():
-            install_precommit_hooks(self.repo)
 
     @classmethod
     def create(cls, path: str, name: str, configuration: dict):
@@ -167,24 +162,6 @@ class Project:
 
         return True
 
-    def has_precommit_hooks_installed(self) -> bool:
-        """Check if the project has the pre-commit hooks installed."""
-        if self.repo is None:
-            return False
-
-        hooks_path = os.path.join(
-            self.repo.git_dir,
-            'hooks',
-            'pre-commit')
-
-        if not os.path.exists(hooks_path):
-            return False
-
-        with open(hooks_path, 'r') as precommitfile:
-            hooks = precommitfile.read()
-
-        return 'pre-commit' in hooks
-
     def has_dvc_installed(self) -> bool:
         """Check if a dvc repository has been initialized in the project."""
         dvc_subdirectory = os.path.join(self.path, '.dvc')
@@ -236,14 +213,12 @@ class Project:
             self.pkg_path,
             name,
             subdirs=[scripts_dir])
-        rel_path = os.path.join(self.path, module_path)
 
         # Remove python extension and change to module syntax
         module = module_path[:-3]
         module = module.replace(os.sep, '.')
         module = '{}.{}'.format(self.name, module)
 
-        print('Importing module %s' % module)
         module = importlib.import_module(module)
         processes = {
             name: process for
@@ -259,7 +234,7 @@ class Project:
                 message = message.format(classname, module_path)
                 raise ValueError(message)
 
-            return processes[classname], rel_path
+            return processes[classname], module_path
 
         if len(processes) == 0:
             message = 'The process class {} was not found in the file {}'
@@ -273,7 +248,7 @@ class Project:
             message = message.format(classname, module_path)
             raise ValueError(message)
 
-        return processes.popitem()[1], rel_path
+        return processes.popitem()[1], module_path
 
 
 def create_project(name: str, path: str, configuration: dict) -> Project:
@@ -301,8 +276,6 @@ def create_project(name: str, path: str, configuration: dict) -> Project:
 
     # Commit the new files to git
     add_all_files_to_repository(repository, 'First commit')
-    install_precommit_hooks(repository)
-
     return Project(os.path.abspath(project_directory), configuration)
 
 

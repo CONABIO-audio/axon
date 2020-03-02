@@ -51,7 +51,6 @@ def create_project_command(ctx, name, path):
 def run_command(ctx, name):
     """Run a with dvc."""
     check_if_in_project(ctx)
-    click.secho('running!', fg='green')
     run(ctx.obj['project'], name)
 
 
