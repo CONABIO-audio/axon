@@ -28,7 +28,11 @@ def run(project, script_name):
     This process file should describe all its dependencies and outputs
     so that dvc can be correctly informed.
     """
-    process, script = project.get_process(script_name)
+    process_class, script = project.get_process(script_name)
+    process = process_class(
+        config=project.configuration,
+        wdir=project.pkg_path)
+
     script_rel_path = os.path.relpath(
         os.path.join(project.pkg_path, script),
         start=project.path)
@@ -43,29 +47,14 @@ def run(project, script_name):
     file = os.path.join(project.path, filename) + '.dvc'
     file = os.path.relpath(file, start=project.path)
 
-    deps = [
-        os.path.join(project.pkg_path, dependency)
-        for dependency in process.deps
-    ] + [
-        script_rel_path,
-        project.requirements_file
-    ]
+    deps = process.get_dependencies()
+    outs = process.get_outs()
+    outs_no_cache = process.get_outs_no_cache()
+    metrics = process.get_metrics()
+    metrics_no_cache = process.get_metrics_no_cache()
 
-    outs = [
-        os.path.join(project.pkg_path, dependency)
-        for dependency in process.outs]
-
-    outs_no_cache = [
-        os.path.join(project.pkg_path, dependency)
-        for dependency in process.outs_no_cache]
-
-    metrics = [
-        os.path.join(project.pkg_path, dependency)
-        for dependency in process.metrics]
-
-    metrics_no_cache = [
-        os.path.join(project.pkg_path, dependency)
-        for dependency in process.metrics_no_cache]
+    # Add script file and virtual env requirements to run deps
+    deps += [script_rel_path, project.requirements_file]
 
     click.secho('[+] Starting DVC run', fg='cyan')
     dvc_run(
@@ -86,8 +75,7 @@ def run(project, script_name):
         project.repo,
         files=git_files,
         commit_message=commit_message)
-
-    click.secho('[-] Run succesfull', fg='green')
+    click.secho('[-] Run successful', fg='green')
 
 
 def main(project_dir, script_name):
@@ -95,7 +83,7 @@ def main(project_dir, script_name):
     config = get_config()
     project = get_project(project_dir, config)
     process, _ = project.get_process(script_name)
-    process(config)()
+    process(config, project.pkg_path)()
 
 
 def parse_arguments():

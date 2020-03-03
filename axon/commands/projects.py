@@ -172,6 +172,11 @@ class Project:
 
         return True
 
+    def run_python(self, *args):
+        """Run project's python."""
+        commands = [self.get_venv_python_path(), *args]
+        subprocess.run(commands, check=True)
+
     def install_packages(self, *args):
         """Install packages into the project virtualenv."""
         commands = [

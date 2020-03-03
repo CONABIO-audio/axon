@@ -45,6 +45,30 @@ def create_project_command(ctx, name, path):
     create_project(name, path, ctx.obj['config'])
 
 
+@main.command(name='install', context_settings=dict(
+    ignore_unknown_options=True,
+))
+@click.pass_context
+@click.argument('args', nargs=-1, type=click.UNPROCESSED)
+def install_packages(ctx, args):
+    """Create a new project."""
+    check_if_in_project(ctx)
+    project = ctx.obj['project']
+    project.install_packages(*args)
+
+
+@main.command(name='python', context_settings=dict(
+    ignore_unknown_options=True,
+))
+@click.pass_context
+@click.argument('args', nargs=-1, type=click.UNPROCESSED)
+def run_python(ctx, args):
+    """Run command with project's virtual env python."""
+    check_if_in_project(ctx)
+    project = ctx.obj['project']
+    project.run_python(*args)
+
+
 @main.command(name='run')
 @click.argument('name')
 @click.pass_context
