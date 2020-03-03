@@ -36,5 +36,6 @@ init:
   git: True
   dvc: True
   venv: True
+  base_files: True
   requirements: True
   directory_structure: True

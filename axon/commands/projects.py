@@ -77,50 +77,77 @@ class Project:
 
         Will create or install them if missing.
         """
-        if self.repo is None:
-            click.secho('[+] Initializing a git repository', fg='cyan')
-            self.repo = create_git_repository(self.path)
+        # Init configuration object indicates which components will be
+        # installed at project initialization.
+        init = self.configuration['init']
 
-        if not self.has_venv():
-            click.secho('[+] Creating a virtual environment', fg='cyan')
-            subprocess.run([
-                self.configuration['base_python_installation'],
-                '-m',
-                'venv',
-                self.venv_dir
-            ], check=True)
+        if self.repo is None and init['git']:
+            self._initialize_git_repo()
 
-        if not self.has_base_packages_installed():
-            click.secho('[+] Installing basic packages', fg='cyan')
-            packages = self.configuration['base_packages']
-            self.install_packages(*packages)
-            self.update_requirements()
+        if not self.has_venv() and init['venv']:
+            self._create_virtualenv()
 
-        if not self.has_basic_files():
-            click.secho('[+] Adding basic python package files', fg='cyan')
+        if not self.has_base_packages_installed() and init['requirements']:
+            self._install_base_requirements()
 
-            basic_files = create_basic_files(self.path)
-            commit_message = 'Basic files added'
-            git_add_and_commit(self.repo, basic_files, commit_message)
+        if not self.has_basic_files() and init['base_files']:
+            self._add_base_files()
 
-        if not self.has_directory_structure():
-            click.secho(
-                '[+] Creating the basic directory structure',
-                fg='cyan')
+        if not self.has_directory_structure() and init['directory_structure']:
+            self._add_base_directory_structure()
 
-            structure_files = create_project_structure(
-                self.name,
-                self.path,
-                self.configuration)
-            commit_message = 'Base structure files added'
-            git_add_and_commit(self.repo, structure_files, commit_message)
+        if not self.has_dvc_installed() and init['dvc']:
+            self._initialize_dvc_repo()
 
-        if not self.has_dvc_installed():
-            click.secho('[+] Initializing a dvc repository', fg='cyan')
-            dvc_init(self.path)
-            dvc_files = os.path.join(self.path, '.dvc')
-            commit_message = 'Initialize DVC project'
-            git_add_and_commit(self.repo, [dvc_files], commit_message)
+    def _initialize_git_repo(self):
+        """Create a git repository in the project directory."""
+        click.secho('[+] Initializing a git repository', fg='cyan')
+        self.repo = create_git_repository(self.path)
+
+    def _initialize_dvc_repo(self):
+        """Create a dvc repository in the project directory."""
+        click.secho('[+] Initializing a dvc repository', fg='cyan')
+        dvc_init(self.path)
+        dvc_files = os.path.join(self.path, '.dvc')
+        commit_message = 'Initialize DVC project'
+        git_add_and_commit(self.repo, [dvc_files], commit_message)
+
+    def _create_virtualenv(self):
+        """Create a virtual environment in the project directory."""
+        click.secho('[+] Creating a virtual environment', fg='cyan')
+        subprocess.run([
+            self.configuration['base_python_installation'],
+            '-m',
+            'venv',
+            self.venv_dir
+        ], check=True)
+
+    def _install_base_requirements(self):
+        """Install base packages into the projects virtual environment."""
+        click.secho('[+] Installing basic packages', fg='cyan')
+        packages = self.configuration['base_packages']
+        self.install_packages(*packages)
+        self.update_requirements()
+
+    def _add_base_files(self):
+        """Add base file into the project directory."""
+        click.secho('[+] Adding basic python package files', fg='cyan')
+        basic_files = create_basic_files(self.path)
+        commit_message = 'Basic files added'
+        git_add_and_commit(self.repo, basic_files, commit_message)
+
+    def _add_base_directory_structure(self):
+        """Create the base directory structure in the project directory."""
+        click.secho(
+            '[+] Creating the basic directory structure',
+            fg='cyan')
+
+        structure_files = create_project_structure(
+            self.name,
+            self.path,
+            self.configuration)
+        commit_message = 'Base structure files added'
+        git_add_and_commit(self.repo, structure_files, commit_message)
 
     def get_venv_python_path(self):
         """Return absolute path to project's virtual env python binary."""

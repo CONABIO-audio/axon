@@ -3,6 +3,7 @@
 import tempfile
 import os
 import sys
+from copy import deepcopy
 import pytest
 
 from axon.commands import projects
@@ -61,12 +62,6 @@ def test_create_basic_files():
         with open(file_path, 'r') as file_obj:
             assert len(file_obj.read()) > 0
 
-        # requirements file should exists
-        file_path = os.path.join(path, 'requirements.txt')
-        assert os.path.exists(file_path)
-        with open(file_path, 'r') as file_obj:
-            assert len(file_obj.read()) > 0
-
 
 def test_create_basic_directory_structure():
     """Check if can add create project directory structure."""
@@ -98,21 +93,41 @@ def test_create_basic_directory_structure():
 def test_create_project():
     """Check if a new project directory is created correctly."""
     name = 'tmp'
+    config = deepcopy(BASE_CONFIGURATION)
+    config['init'] = {
+        'git': False,
+        'dvc': False,
+        'venv': False,
+        'base_files': False,
+        'requirements': False,
+        'directory_structure': False
+    }
+
     with tempfile.TemporaryDirectory() as path:
-        projects.create_project(name, path, BASE_CONFIGURATION)
+        projects.create_project(name, path, config)
         root_path = os.path.join(path, name + '_project')
 
         assert os.path.exists(root_path)
 
         with pytest.raises(ValueError):
-            projects.create_project(name, path, BASE_CONFIGURATION)
+            projects.create_project(name, path, config)
 
 
 def test_get_project():
     """Check that the root project directory is successfuly extracted."""
     name = 'tmp'
+    config = deepcopy(BASE_CONFIGURATION)
+    config['init'] = {
+        'git': True,
+        'dvc': False,
+        'venv': False,
+        'base_files': True,
+        'requirements': False,
+        'directory_structure': True
+    }
+
     with tempfile.TemporaryDirectory() as path:
-        projects.create_project(name, path, BASE_CONFIGURATION)
+        projects.create_project(name, path, config)
 
         root_path = os.path.abspath(os.path.join(path, name + '_project'))
         paths = [
@@ -127,12 +142,22 @@ def test_get_project():
 
 def test_project_has_git_repository():
     """Check if the Project builds the git repository correctly."""
+    config = deepcopy(BASE_CONFIGURATION)
+    config['init'] = {
+        'git': True,
+        'dvc': False,
+        'venv': False,
+        'base_files': False,
+        'requirements': False,
+        'directory_structure': False
+    }
+
     with tempfile.TemporaryDirectory() as path:
-        project = projects.Project(path, BASE_CONFIGURATION, validate=False)
+        project = projects.Project(path, config, validate=False)
         assert project.repo is None
 
     with tempfile.TemporaryDirectory() as path:
-        project = projects.Project(path, BASE_CONFIGURATION, validate=True)
+        project = projects.Project(path, config, validate=True)
         assert project.repo is not None
 
 
@@ -146,6 +171,8 @@ def test_project_create():
         assert project.has_basic_files()
         assert project.has_directory_structure()
         assert project.has_venv()
+        assert project.has_base_packages_installed()
+        assert project.has_dvc_installed()
 
 
 SAMPLE_PROCESS_1 = '''
@@ -174,9 +201,19 @@ class AlternativeProcess(Process):
 
 def test_project_get_process():
     """Test if project can retrieve a process defined within it."""
+    config = deepcopy(BASE_CONFIGURATION)
+    config['init'] = {
+        'git': True,
+        'dvc': False,
+        'venv': False,
+        'base_files': False,
+        'requirements': False,
+        'directory_structure': True
+    }
+
     with tempfile.TemporaryDirectory() as path:
         name = 'detector'
-        project = projects.Project.create(path, name, BASE_CONFIGURATION)
+        project = projects.Project.create(path, name, config)
         sys.path.append(project.path)
 
         files_to_create = [
