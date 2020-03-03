@@ -37,10 +37,8 @@ def run(project, script_name):
         os.path.join(project.pkg_path, script),
         start=project.path)
 
-    command = "axon python -m axon.commands.run {} {}"
-    command = command.format(
-        project.path,
-        script)
+    command = "axon python -m axon.commands.run {}"
+    command = command.format(script)
 
     filename, _ = os.path.splitext(script_rel_path)
     file = os.path.join(project.path, filename) + '.dvc'
@@ -77,10 +75,10 @@ def run(project, script_name):
     click.secho('[-] Run successful', fg='green')
 
 
-def main(project_dir, script_name):
+def main(script_name):
     """Run a process in project without git and dvc."""
     config = get_config()
-    project = get_project(project_dir, config)
+    project = get_project(os.getcwd(), config)
     process, _ = project.get_process(script_name)
     process(config, project.pkg_path)()
 
@@ -88,10 +86,6 @@ def main(project_dir, script_name):
 def parse_arguments():
     """Parse the arguments for the main function."""
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        'project_dir',
-        type=str,
-        help='Path to project')
     parser.add_argument(
         'script_name',
         type=str,
@@ -101,4 +95,4 @@ def parse_arguments():
 
 if __name__ == '__main__':
     args = parse_arguments()
-    main(args.project_dir, args.script_name)
+    main(args.script_name)
