@@ -6,6 +6,7 @@ directory_structure:
   - preprocessors
   - evaluators
   - scripts
+  - data
 
 # Single or list of configuration files from which to read and replace settings. Will
 # be read and replaced in order when is a list.
@@ -29,7 +30,6 @@ base_python_installation: /usr/local/bin/python3
 # Python packages to be installed by default in the virtual environment.
 base_packages:
   - mlflow
-  - axon
 
 # Initialization procedure.
 init:

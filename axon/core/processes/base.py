@@ -131,7 +131,7 @@ class Process(ABC):
         relative_path = outs[name]
 
         if self.wdir is not None:
-            os.path.join(self.wdir, relative_path)
+            return os.path.join(self.wdir, relative_path)
 
         return relative_path
 
@@ -162,7 +162,7 @@ class Process(ABC):
         relative_path = metrics[name]
 
         if self.wdir is not None:
-            os.path.join(self.wdir, relative_path)
+            return os.path.join(self.wdir, relative_path)
 
         return relative_path
 
@@ -185,7 +185,7 @@ class Process(ABC):
         relative_path = deps[name]
 
         if self.wdir is not None:
-            os.path.join(self.wdir, relative_path)
+            return os.path.join(self.wdir, relative_path)
 
         return relative_path
 

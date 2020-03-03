@@ -37,9 +37,8 @@ def run(project, script_name):
         os.path.join(project.pkg_path, script),
         start=project.path)
 
-    command = "{} -m axon.commands.run {} {}"
+    command = "axon python -m axon.commands.run {} {}"
     command = command.format(
-        project.get_venv_python_path(),
         project.path,
         script)
 
@@ -60,7 +59,7 @@ def run(project, script_name):
     dvc_run(
         exec_path=project.path,
         command=command,
-        wdir=process.wdir,
+        wdir=project.path,
         deps=deps,
         outs=outs,
         outs_no_cache=outs_no_cache,

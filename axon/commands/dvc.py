@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """DVC commands."""
 #  pylint: disable=too-many-branches,too-many-arguments,too-many-locals
-from subprocess import Popen
+import subprocess
 
 
 class DvcExecutionError(Exception):
@@ -37,13 +37,8 @@ def run_command(args, exec_path=None):
     DvcExecutionError
         If the command fails to execute and prints original stderr output.
     """
-    proc = Popen(args, cwd=exec_path)
-    stdout, stderr = proc.communicate()
-
-    if stderr:
-        raise DvcExecutionError(stderr)
-
-    return " ".join(args), stdout
+    subprocess.run(args, cwd=exec_path, check=True)
+    return " ".join(args), None
 
 
 def get_help(dvc_command):
