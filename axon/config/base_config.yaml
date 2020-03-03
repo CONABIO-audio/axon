@@ -6,7 +6,6 @@ directory_structure:
   - preprocessors
   - evaluators
   - scripts
-  - data
 
 # Single or list of configuration files from which to read and replace settings. Will
 # be read and replaced in order when is a list.
@@ -14,3 +13,28 @@ config_files:
 
 # Name of the configuration file within an axon project
 config_filename: axon.config.yaml
+
+# Directory in which to store the virtual environment of a project. Path is relative
+# to the project dir
+venv_dir: .venv
+
+# File to store current virtual environment state (installed packages with versions).
+# The path is relative to the project dir
+requirements_file: requirements.txt
+
+# Path to global python installation. Is needed to install virtual environments
+# correctly. The default value assumes a unix instalation.
+base_python_installation: /usr/local/bin/python3
+
+# Python packages to be installed by default in the virtual environment.
+base_packages:
+  - mlflow
+  - axon
+
+# Initialization procedure.
+init:
+  git: True
+  dvc: True
+  venv: True
+  requirements: True
+  directory_structure: True

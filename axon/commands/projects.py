@@ -6,15 +6,18 @@ development takes place. The projects are structured in a specific manner
 to facilitate navigation and help organize code.
 """
 import os
+import venv
+import subprocess
 from inspect import getmembers
 from inspect import isclass
 import importlib
 from typing import Iterable
+
 import git
+import click
 
 from axon.core.processes import Process
 from axon.commands.git_utils import create_repository as create_git_repository
-from axon.commands.git_utils import add_all_files_to_repository
 from axon.commands.git_utils import git_add_and_commit
 from axon.commands.templates import get_template
 from axon.commands.dvc import init as dvc_init
@@ -27,9 +30,8 @@ BASIC_FILES = [
     'setup.py',
     'axon.config.yaml',
     '.gitignore',
-    'MLProject',
+    'MLproject',
     'conda.yaml',
-    'requirements.txt',
 ]
 
 
@@ -44,7 +46,7 @@ class Project:
     project_dir_postfix = '_project'
 
     def __init__(self, path: str, configuration: dict, validate: bool = True):
-        self.path = path
+        self.path = os.path.abspath(path)
         self.configuration = configuration
 
         if 'project_dir_postfix' in configuration:
@@ -52,7 +54,14 @@ class Project:
 
         name = os.path.basename(path).replace(self.project_dir_postfix, '')
         self.name = name
-        self.pkg_path = os.path.join(path, name)
+
+        self.pkg_path = os.path.join(self.path, name)
+        self.venv_dir = os.path.join(
+            self.path,
+            configuration['venv_dir'])
+        self.requirements_file = os.path.join(
+            self.path,
+            configuration['requirements_file'])
 
         try:
             self.repo = git.Repo(self.path)
@@ -69,14 +78,36 @@ class Project:
         Will create or install them if missing.
         """
         if self.repo is None:
+            click.secho('[+] Initializing a git repository', fg='cyan')
             self.repo = create_git_repository(self.path)
 
+        if not self.has_venv():
+            click.secho('[+] Creating a virtual environment', fg='cyan')
+            subprocess.run([
+                self.configuration['base_python_installation'],
+                '-m',
+                'venv',
+                self.venv_dir
+            ], check=True)
+
+        if not self.has_base_packages_installed():
+            click.secho('[+] Installing basic packages', fg='cyan')
+            packages = self.configuration['base_packages']
+            self.install_packages(*packages)
+            self.update_requirements()
+
         if not self.has_basic_files():
+            click.secho('[+] Adding basic python package files', fg='cyan')
+
             basic_files = create_basic_files(self.path)
             commit_message = 'Basic files added'
             git_add_and_commit(self.repo, basic_files, commit_message)
 
         if not self.has_directory_structure():
+            click.secho(
+                '[+] Creating the basic directory structure',
+                fg='cyan')
+
             structure_files = create_project_structure(
                 self.name,
                 self.path,
@@ -85,10 +116,59 @@ class Project:
             git_add_and_commit(self.repo, structure_files, commit_message)
 
         if not self.has_dvc_installed():
+            click.secho('[+] Initializing a dvc repository', fg='cyan')
             dvc_init(self.path)
             dvc_files = os.path.join(self.path, '.dvc')
             commit_message = 'Initialize DVC project'
             git_add_and_commit(self.repo, [dvc_files], commit_message)
+
+    def get_venv_python_path(self):
+        """Return absolute path to project's virtual env python binary."""
+        return os.path.join(self.venv_dir, 'bin', 'python')
+
+    def get_venv_pip_path(self):
+        """Return absolute path to project's virtual env pip binary."""
+        return os.path.join(self.venv_dir, 'bin', 'pip')
+
+    def has_base_packages_installed(self):
+        """Check if base packages are installed in the virtual environment."""
+        if not os.path.exists(self.requirements_file):
+            return False
+
+        with open(self.requirements_file, 'r') as requirements_file:
+            requirements = requirements_file.readlines()
+
+        installed_packages = {line.split('==')[0] for line in requirements}
+        for base_package in self.configuration['base_packages']:
+            if base_package not in installed_packages:
+                return False
+
+        return True
+
+    def install_packages(self, *args):
+        """Install packages into the project virtualenv."""
+        commands = [
+            self.get_venv_pip_path(),
+            'install',
+            *args
+        ]
+        subprocess.run(commands, check=True)
+        self.update_requirements()
+
+    def update_requirements(self):
+        """Update the requirements.txt file."""
+        click.secho('[+] Updating project requirements', fg='cyan')
+        commands = [
+            self.get_venv_pip_path(),
+            'freeze'
+        ]
+        output = subprocess.run(commands, check=True, capture_output=True)
+        with open(self.requirements_file, 'wb') as req_file:
+            req_file.write(output.stdout)
+        git_add_and_commit(
+            self.repo,
+            [self.requirements_file],
+            "updating requirements")
 
     @classmethod
     def create(cls, path: str, name: str, configuration: dict):
@@ -166,6 +246,10 @@ class Project:
         """Check if a dvc repository has been initialized in the project."""
         dvc_subdirectory = os.path.join(self.path, '.dvc')
         return os.path.exists(dvc_subdirectory)
+
+    def has_venv(self):
+        """Check if the project has a virtual environment installed."""
+        return os.path.exists(self.venv_dir)
 
     def get_process(self, name: str) -> Process:
         """
@@ -259,24 +343,7 @@ def create_project(name: str, path: str, configuration: dict) -> Project:
     name : str
     path : str
     """
-    project_directory = os.path.join(path, name + '_project')
-    if os.path.exists(project_directory):
-        message = (
-            'A directory with this name already exists, please use'
-            ' another name')
-        raise ValueError(message)
-
-    # Create a  new repository directory
-    os.makedirs(project_directory)
-    repository = create_git_repository(project_directory)
-
-    # Add basic files and the directory structure
-    create_basic_files(project_directory)
-    create_project_structure(name, project_directory, configuration)
-
-    # Commit the new files to git
-    add_all_files_to_repository(repository, 'First commit')
-    return Project(os.path.abspath(project_directory), configuration)
+    return Project.create(name=name, path=path, configuration=configuration)
 
 
 def create_basic_files(path, context: dict = None) -> Iterable[str]:
@@ -330,6 +397,14 @@ def create_project_structure(
         created_files.append(init_file)
 
     return created_files
+
+
+def create_virtualenv(path: str, configuration: dict) -> str:
+    """Create a new virtual env at the given path."""
+    venv_subdir = configuration.get('venv_dir')
+    venv_dir = os.path.join(path, venv_subdir)
+    venv.create(venv_dir, with_pip=True)
+    return venv_dir
 
 
 def get_project_path(path: str, configuration: dict) -> str:

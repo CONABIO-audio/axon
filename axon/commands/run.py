@@ -26,15 +26,18 @@ def run(project, script_name):
 
     The process will be loaded from the file indicated by script_name.
     This process file should describe all its dependencies and outputs
-    so that dvc can be informed correctly.
+    so that dvc can be correctly informed.
     """
     process, script = project.get_process(script_name)
     script_rel_path = os.path.relpath(
         os.path.join(project.pkg_path, script),
         start=project.path)
 
-    command = "python -m axon.commands.run {} {}"
-    command = command.format(project.path, script)
+    command = "{} -m axon.commands.run {} {}"
+    command = command.format(
+        project.get_venv_python_path(),
+        project.path,
+        script)
 
     filename, _ = os.path.splitext(script_rel_path)
     file = os.path.join(project.path, filename) + '.dvc'
@@ -44,22 +47,27 @@ def run(project, script_name):
         os.path.join(project.pkg_path, dependency)
         for dependency in process.deps
     ] + [
-        script_rel_path
+        script_rel_path,
+        project.requirements_file
     ]
+
     outs = [
         os.path.join(project.pkg_path, dependency)
         for dependency in process.outs]
+
     outs_no_cache = [
         os.path.join(project.pkg_path, dependency)
         for dependency in process.outs_no_cache]
+
     metrics = [
         os.path.join(project.pkg_path, dependency)
         for dependency in process.metrics]
+
     metrics_no_cache = [
         os.path.join(project.pkg_path, dependency)
         for dependency in process.metrics_no_cache]
 
-    click.secho('[1] Starting DVC run', fg='green')
+    click.secho('[+] Starting DVC run', fg='cyan')
     dvc_run(
         exec_path=project.path,
         command=command,
@@ -71,15 +79,15 @@ def run(project, script_name):
         metrics_no_cache=metrics_no_cache,
         file=file)
 
-    click.secho('[2] Adding files to git', fg='green')
-    git_files = (
-        deps + outs_no_cache + metrics + metrics_no_cache + [file]
-    )
+    click.secho('[+] Adding files to git', fg='cyan')
+    git_files = deps + [file]
     commit_message = 'Running %s' % command
     git_add_and_commit(
         project.repo,
         files=git_files,
         commit_message=commit_message)
+
+    click.secho('[-] Run succesfull', fg='green')
 
 
 def main(project_dir, script_name):

@@ -13,7 +13,6 @@ from axon.config import get_config
 BASE_CONFIGURATION = get_config()
 
 
-@pytest.mark.skip()
 def test_create_basic_files():
     """Check if can add basic project files to directory."""
     with tempfile.TemporaryDirectory() as path:
@@ -46,12 +45,6 @@ def test_create_basic_files():
 
         # gitignore file should exists
         file_path = os.path.join(path, '.gitignore')
-        assert os.path.exists(file_path)
-        with open(file_path, 'r') as file_obj:
-            assert len(file_obj.read()) > 0
-
-        # precommit file should exists
-        file_path = os.path.join(path, '.pre-commit-config.yaml')
         assert os.path.exists(file_path)
         with open(file_path, 'r') as file_obj:
             assert len(file_obj.read()) > 0
@@ -102,7 +95,6 @@ def test_create_basic_directory_structure():
             assert os.path.exists(os.path.join(path, filename))
 
 
-@pytest.mark.skip()
 def test_create_project():
     """Check if a new project directory is created correctly."""
     name = 'tmp'
@@ -116,7 +108,6 @@ def test_create_project():
             projects.create_project(name, path, BASE_CONFIGURATION)
 
 
-@pytest.mark.skip()
 def test_get_project():
     """Check that the root project directory is successfuly extracted."""
     name = 'tmp'
@@ -134,7 +125,6 @@ def test_get_project():
             assert project.path == root_path
 
 
-@pytest.mark.skip()
 def test_project_has_git_repository():
     """Check if the Project builds the git repository correctly."""
     with tempfile.TemporaryDirectory() as path:
@@ -146,19 +136,6 @@ def test_project_has_git_repository():
         assert project.repo is not None
 
 
-@pytest.mark.skip()
-def test_has_precommit_hooks_installed():
-    """Check if the Project method has_precommit_hooks_installed works fine."""
-    with tempfile.TemporaryDirectory() as path:
-        project = projects.Project(path, BASE_CONFIGURATION, validate=False)
-        assert not project.has_precommit_hooks_installed()
-
-    with tempfile.TemporaryDirectory() as path:
-        project = projects.Project(path, BASE_CONFIGURATION, validate=True)
-        assert project.has_precommit_hooks_installed()
-
-
-@pytest.mark.skip()
 def test_project_create():
     """Check if the create method of the Project class is working correctly."""
     with tempfile.TemporaryDirectory() as path:
@@ -168,7 +145,7 @@ def test_project_create():
         assert project.repo is not None
         assert project.has_basic_files()
         assert project.has_directory_structure()
-        assert project.has_precommit_hooks_installed()
+        assert project.has_venv()
 
 
 SAMPLE_PROCESS_1 = '''
