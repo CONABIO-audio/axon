@@ -194,7 +194,8 @@ class Project:
             self.get_venv_pip_path(),
             'freeze'
         ]
-        output = subprocess.run(commands, check=True, capture_output=True)
+        output = subprocess.run(commands, check=True, stdout=subprocess.PIPE)
+
         with open(self.requirements_file, 'wb') as req_file:
             req_file.write(output.stdout)
         git_add_and_commit(
