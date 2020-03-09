@@ -5,11 +5,27 @@ import logging
 import collections.abc
 import yaml
 
-from axon.commands.projects import get_project_path
-
 
 BASE_CONFIG_NAME = 'base_config.yaml'
 BASE_CONFIG_PATH = os.path.join(os.path.dirname(__file__), BASE_CONFIG_NAME)
+
+
+def get_project_path(path: str, configuration: dict) -> str:
+    """Get root directory of the project that contains the provided path."""
+    project_config_filename = configuration.get('config_filename')
+
+    current_dir = os.path.abspath(path)
+    while True:
+        if project_config_filename in os.listdir(current_dir):
+            return current_dir
+
+        parent_dir = os.path.dirname(current_dir)
+        if current_dir == parent_dir:
+            message = 'No project was found at the given path ({})'
+            message = message.format(path)
+            raise FileNotFoundError(message)
+
+        current_dir = parent_dir
 
 
 def get_config():

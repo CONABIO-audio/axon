@@ -13,10 +13,11 @@ from inspect import isclass
 import importlib
 from typing import Iterable
 
-import git
 import click
+import git
 
-from axon.core.processes import Process
+from axon.config.main import get_project_path
+from axon.core.processes.base import Process
 from axon.commands.git_utils import create_repository as create_git_repository
 from axon.commands.git_utils import git_add_and_commit
 from axon.commands.templates import get_template
@@ -438,24 +439,6 @@ def create_virtualenv(path: str, configuration: dict) -> str:
     venv_dir = os.path.join(path, venv_subdir)
     venv.create(venv_dir, with_pip=True)
     return venv_dir
-
-
-def get_project_path(path: str, configuration: dict) -> str:
-    """Get root directory of the project that contains the provided path."""
-    project_config_filename = configuration.get('config_filename')
-
-    current_dir = os.path.abspath(path)
-    while True:
-        if project_config_filename in os.listdir(current_dir):
-            return current_dir
-
-        parent_dir = os.path.dirname(current_dir)
-        if current_dir == parent_dir:
-            message = 'No project was found at the given path ({})'
-            message = message.format(path)
-            raise FileNotFoundError(message)
-
-        current_dir = parent_dir
 
 
 def get_project(path: str, configuration: dict) -> Project:

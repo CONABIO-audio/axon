@@ -50,8 +50,8 @@ def run(project, script_name):
     metrics = process.get_metrics()
     metrics_no_cache = process.get_metrics_no_cache()
 
-    # Add script file and virtual env requirements to run deps
-    deps += [script_rel_path, project.requirements_file]
+    # Add script file to run deps
+    deps.append(script_rel_path)
 
     click.secho('[+] Starting DVC run', fg='cyan')
     dvc_run(
