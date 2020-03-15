@@ -83,10 +83,62 @@ class MLFlowMixin:
             return output
 
 
-class MLFlowProcess(Process, MLFlowMixin):  # pylint: disable=abstract-method
+class TensorflowMixin(MLFlowMixin):
+    """Tensorflow specifics to communicate with mlflow."""
+
+    def log_model(self,
+                  saved_model_dir,
+                  meta_graph_tags,
+                  signature_def_key,
+                  artifact_path,
+                  registered_model_name):
+        """Log model with mlflow."""
+        return mlflow.log_model(tf_saved_model_dir=saved_model_dir,
+                                tf_meta_graph_tags=meta_graph_tags,
+                                tf_signature_def_key=signature_def_key,
+                                tf_artifact_path=artifact_path,
+                                registered_model_name=registered_model_name)
+
+    def save_model(self,
+                   saved_model_dir,
+                   meta_graph_tags,
+                   signature_def_key,
+                   path,
+                   mlflow_model):
+        """Save model with mlflow."""
+        return mlflow.tensorflow.save_model(
+            tf_saved_model_dir=saved_model_dir,
+            tf_meta_graph_tags=meta_graph_tags,
+            tf_signature_def_key=signature_def_key,
+            path=path,
+            mlflow_model=mlflow_model)
+
+    def load_model(self, uri, session):
+        """Load model with mlflow."""
+        return mlflow.tensorflow.load_model(uri, session)
+
+    def autolog(self, every_n_iter=100):
+        """Log automatically (experimental in mlflow)."""
+        mlflow.tensorflow.autolog(every_n_iter=every_n_iter)
+
+
+# pylint: disable=abstract-method
+class MLFlowProcess(Process, MLFlowMixin):
     """MLFlow Process.
 
-    This processes generate an mlflow run and thus can log and store
+    This processes generates an mlflow run and thus can log and store
     information generated at runtime. Inherit from this class if the process
     requires closer tracking by mlflow, such as model trainers and evaluators.
+    """
+
+
+# pylint: disable=abstract-method
+class TensorflowProcess(Process, TensorflowMixin):
+    """Tensorflow + MLFlow Process.
+
+    This processes generates an mlflow run and thus can log and store
+    information generated at runtime. Inherit from this class if the process
+    requires closer tracking by mlflow, such as model trainers and evaluators.
+    This class also provides some methods to handle storing and restoring
+    tensorflow models.
     """
