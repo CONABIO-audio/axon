@@ -60,41 +60,44 @@ class Process(ABC):
         if self.wdir is None and wdir is not None:
             self.wdir = wdir
 
-        if self.wdir is not None and not isinstance(self.wdir, str):
-            message = (
-                'The specified working directory for this process is not '
-                'a string')
-            raise ValueError(message)
+        assert isinstance(self.wdir, str), (
+            'The specified working directory for this process is not '
+            'a string')
 
-        if self.deps is not None and not isinstance(self.deps, dict):
-            message = (
-                'The specified dependencies for this process are not '
-                'in a dictionary')
-            raise ValueError(message)
+        if self.deps is None:
+            self.deps = {}
 
-        if self.outs is not None and not isinstance(self.outs, dict):
-            message = (
-                'The specified outputs for this process are not '
-                'in a dictionary')
-            raise ValueError(message)
+        assert isinstance(self.deps, dict), (
+            'The specified dependencies for this process are not '
+            'in a dictionary')
 
-        if self.outs_no_cache is not None and not isinstance(self.outs_no_cache, dict):  # noqa
-            message = (
-                'The specified outputs no cache for this process are not '
-                'in a dictionary')
-            raise ValueError(message)
+        if self.outs is None:
+            self.outs = {}
 
-        if self.metrics is not None and not isinstance(self.metrics, dict):
-            message = (
-                'The specified metrics for this process are not '
-                'in a dictionary')
-            raise ValueError(message)
+        assert isinstance(self.outs, dict), (
+            'The specified outputs for this process are not '
+            'in a dictionary')
 
-        if self.metrics_no_cache is not None and not isinstance(self.metrics_no_cache, dict):  # noqa
-            message = (
-                'The specified metrics no cache for this process are not '
-                'in a dictionary')
-            raise ValueError(message)
+        if self.outs_no_cache is None:
+            self.outs_no_cache = {}
+
+        assert isinstance(self.outs_no_cache, dict), (
+            'The specified outputs no cache for this process are not '
+            'in a dictionary')
+
+        if self.metrics is None:
+            self.metrics = {}
+
+        assert isinstance(self.metrics, dict), (
+            'The specified metrics for this process are not '
+            'in a dictionary')
+
+        if self.metrics_no_cache is None:
+            self.metrics_no_cache = {}
+
+        assert isinstance(self.metrics_no_cache, dict), (
+            'The specified metrics no cache for this process are not '
+            'in a dictionary')
 
     @abstractmethod
     def run(self, *args, **kwargs):
@@ -106,16 +109,9 @@ class Process(ABC):
 
     def get_out_path(self, name):
         """Get the correct path for the output file."""
-        if self.outs is None:
-            outs = {}
-        else:
-            outs = copy(self.outs)
+        outs = copy(self.outs)
 
-        if self.outs_no_cache is None:
-            outs_no_cache = {}
-        else:
-            outs_no_cache = copy(self.outs_no_cache)
-
+        outs_no_cache = copy(self.outs_no_cache)
         outs.update(outs_no_cache)
 
         if len(outs) == 0:
@@ -137,16 +133,9 @@ class Process(ABC):
 
     def get_metric_path(self, name):
         """Get the correct path for the metric file."""
-        if self.metrics is None:
-            metrics = {}
-        else:
-            metrics = copy(self.metrics)
+        metrics = copy(self.metrics)
 
-        if self.metrics_no_cache is None:
-            metrics_no_cache = {}
-        else:
-            metrics_no_cache = copy(self.metrics_no_cache)
-
+        metrics_no_cache = copy(self.metrics_no_cache)
         metrics.update(metrics_no_cache)
 
         if len(metrics) == 0:
@@ -169,8 +158,6 @@ class Process(ABC):
     def get_dep_path(self, name):
         """Get the correct path for the dependency file."""
         deps = self.deps
-        if deps is None:
-            deps = {}
 
         if len(deps) == 0:
             message = 'No dependencies where specified for this process'
@@ -191,37 +178,22 @@ class Process(ABC):
 
     def get_dependencies(self):
         """Get all process dependency paths."""
-        if self.deps is None:
-            return []
-
         return [self.get_dep_path(key) for key in self.deps]
 
     def get_outs(self):
         """Get all process output paths."""
-        if self.outs is None:
-            return []
-
         return [self.get_out_path(key) for key in self.outs]
 
     def get_outs_no_cache(self):
         """Get all process no cached output paths."""
-        if self.outs_no_cache is None:
-            return []
-
         return [self.get_out_path(key) for key in self.outs_no_cache]
 
     def get_metrics(self):
         """Get all process metric paths."""
-        if self.metrics is None:
-            return []
-
         return [self.get_metric_path(key) for key in self.metrics]
 
     def get_metrics_no_cache(self):
         """Get all process no cached metric paths."""
-        if self.metrics_no_cache is None:
-            return []
-
         return [self.get_metric_path(key) for key in self.metrics_no_cache]
 
     def __call__(self, *args, **kwargs):
