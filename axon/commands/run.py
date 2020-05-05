@@ -15,8 +15,8 @@ import argparse
 import click
 
 from axon.commands.projects import get_project
-from axon.commands.git_utils import git_add_and_commit
-from axon.commands.dvc import run as dvc_run
+from axon.project.project_git import git_add_and_commit
+from axon.project.project_dvc import run as dvc_run
 from axon.config import get_config
 
 

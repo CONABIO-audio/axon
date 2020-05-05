@@ -12,22 +12,28 @@ def project_command(ctx):
     # pylint: disable=import-outside-toplevel
     from axon.commands.projects import get_project
 
-    try:
-        ctx.obj['project'] = get_project(os.getcwd(), ctx.obj['config'])
-        sys.path.append(ctx.obj['project'].path)
-    except FileNotFoundError:
-        click.secho('You are not within an axon project directory', fg='red')
-        ctx.exit()
+    if ctx.invoked_subcommand != 'create':
+        try:
+            ctx.obj['project'] = get_project(os.getcwd(), ctx.obj['config'])
+            sys.path.append(ctx.obj['project'].path)
+        except FileNotFoundError:
+            message = 'You are not within an axon project directory'
+            click.secho(message, fg='red')
+            ctx.exit()
 
 
 @project_command.command(name='create')
 @click.argument('name')
-@click.argument('path')
+@click.option('--path', '-p', type=str)
 @click.pass_context
 def create_command(ctx, name, path):
     """Create a new project."""
     # pylint: disable=import-outside-toplevel
     from axon.commands.projects import create_project
+
+    if path is None:
+        path = os.path.join(os.getcwd(), name)
+
     create_project(name, path, ctx.obj['config'])
 
 
@@ -40,6 +46,18 @@ def install_packages(ctx, args):
     """Create a new project."""
     project = ctx.obj['project']
     project.install_packages(*args)
+
+
+@project_command.command(name='pip', context_settings=dict(
+    ignore_unknown_options=True,
+))
+@click.pass_context
+@click.argument('args', nargs=-1, type=click.UNPROCESSED)
+@click.option('--save', '-s', is_flag=True)
+def run_pip(ctx, args, save):
+    """Create a new project."""
+    project = ctx.obj['project']
+    project.run_pip(*args, update=save)
 
 
 @project_command.command(name='python', context_settings=dict(
